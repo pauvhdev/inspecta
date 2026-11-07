@@ -746,6 +746,23 @@ Regla diaria: al acabar el día, `fvm flutter test` en verde y un commit. Estima
 
 ## 14. Decisiones abiertas para Pau (con recomendación)
 
+### Decisiones tomadas (07/11/2026)
+
+| # | Decisión | Elegido |
+|---|---|---|
+| 2 | Panel de oficina | **Misma app Flutter en web** |
+| 3 | Plataformas | **Android + web** (iOS compila, no se publica) |
+| 4 | IA en la demo pública | **Respuestas grabadas y etiquetadas** |
+| 5 | Facturación de Gemini | **No se activa.** Se usa la **capa gratuita** (sin tarjeta). Como en ella Google puede usar lo enviado, **solo se envían fotos de equipos y datos inventados: nunca personas, clientes ni datos reales.** Prevalece sobre las menciones a «Tier 1» de §9.4, §10, §12 (día 9) y §13. Para un cliente real seguiría haciendo falta Tier 1 o Vertex AI (decisión 18) |
+| 10 | Técnico y material real | **Probablemente sí** (Pau cree que puede conseguirlo). Si no, plan B: fotos de equipos propios o de conocidos |
+| 14 | Repositorio | **Público, sin licencia libre** («todos los derechos reservados») |
+| 15 | Nombre | **Inspecta** (comprobar marca y dominio antes de publicar) |
+| 17 | Idioma del README | Español, con párrafo corto en inglés |
+| 20 | Vídeo | **No** (README con capturas y GIF) |
+
+El resto (1, 6, 7, 8, 9, 11, 12, 13, 16, 18, 19) se toma **con la recomendación de abajo**.
+
+
 1. **Versión de Flutter.** *Recomendación:* instalar FVM (hoy no está) y fijar `.fvmrc` con 3.47.9 en `inspecta` y `sdk: ^3.13.0`, sin tocar el SDK global de Forja; `flutter_riverpod` 3.4.3. Plan B en §13 (incluye `flutter_riverpod` 3.3.2).
 2. **Panel de oficina: la misma app Flutter o una web aparte (Next.js).** *Recomendación:* la misma app Flutter en web con diseño de escritorio. Reutiliza Drift, sincronización y PDF, y refuerza el mensaje «Flutter para empresas».
 3. **Plataformas.** *Recomendación:* Android (APK) y web. iOS compila pero no se publica ni se prueba a fondo.
