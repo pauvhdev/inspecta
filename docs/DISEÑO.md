@@ -3,7 +3,7 @@
 > Partes e inspecciones de climatización con IA, también en un sótano sin cobertura.
 > Proyecto: `inspecta` (esqueleto Flutter para Android, iOS y web, commit `b7b6ab8`, `sdk: ^3.11.4`). Código de referencia: `forja`.
 > «Inspecta» es un nombre provisional. Documento del 07/11/2026.
-> Enfoque: **portfolio primero, sin trampas.** En 15 días hábiles tiene que existir una demo pública que funcione de verdad, un vídeo de 60-90 s y un README escaparate. Todo lo que se enseña funciona; lo que no está respaldado por la investigación se marca **[A VERIFICAR]**.
+> Enfoque: **portfolio primero, sin trampas.** En 15 días hábiles tiene que existir una demo pública que funcione de verdad y un README escaparate con capturas y GIF (sin vídeo: decisión de Pau, basta con el repositorio). Todo lo que se enseña funciona; lo que no está respaldado por la investigación se marca **[A VERIFICAR]**.
 
 ---
 
@@ -134,7 +134,7 @@ Fuera del MVP: portal del cliente final y el rol de director de mantenimiento (i
 21. Edge Functions `leer-placa`, `analizar-foto` y `transcribir-nota` con Gemini; clave solo en secretos.
 22. **Demo pública 100 % local** (web en Cloudflare Pages; APK en unas GitHub Releases públicas, descargables sin iniciar sesión, o, si el repositorio queda privado, en un repositorio público solo de releases o en R2, §11.1) con datos ficticios y respuestas reales de Gemini grabadas.
 23. Conjunto de evaluación **mínimo** (10 muestras propias) para decidir el modelo (§9.4).
-24. README escaparate y vídeo.
+24. README escaparate con capturas y GIF (el vídeo queda fuera: §14.20).
 
 ### 4.2 Si sobra tiempo (por este orden)
 Son los recortes que se aplican **de entrada** para que el plan quepa (§12), con su estimación:
@@ -629,7 +629,9 @@ DemoIaRepository (respuestas grabadas) y sin Supabase.
 - **Lo que se dice con honestidad, en la demo y el README:** la demo web usa respuestas de Gemini grabadas; la sincronización real con Supabase y la IA en vivo se ven en el vídeo y en el código; la web necesita red para cargar y para recargar, y el modo avión real se prueba con el APK.
 - Ventaja: no depende de un backend que se pause, así que funciona igual si un revisor la abre semanas después.
 
-### 11.2 Guion del vídeo (85 s, Android real con backend real)
+### 11.2 Guion del vídeo (85 s, Android real con backend real) — FUERA DEL MVP
+> **Decisión de Pau (§14.20):** no se graba vídeo; el repositorio basta. Este guion se conserva como **guion del GIF** del README (tomas 9-17, 35-41, 41-49, 49-57 y 67-75, sin la azotea) y por si más adelante se quiere un vídeo.
+
 Pantalla partida: móvil a la izquierda (grabación con toques visibles) y panel web a la derecha cuando aporte. Rótulos grandes y subtítulos incrustados (se entiende sin sonido). Todos los datos visibles son ficticios; la azotea y los equipos son de una instalación propia o de un conocido con permiso escrito (§12, día 6), y si la placa no es de un equipo propio se difuminan el n.º de serie y la marca.
 
 | Segundo | Imagen | Rótulo |
@@ -653,7 +655,7 @@ Pantalla partida: móvil a la izquierda (grabación con toques visibles) y panel
 Producción: `scrcpy` o grabación del sistema con «mostrar toques»; ensayo con datos sembrados en la nube (`tool/siembra_nube.sql`, día 10); reactivar el proyecto de Supabase antes de grabar; repetir la toma de azotea hasta tener buena luz; difuminar n.º de serie y marca si el equipo no es propio. La versión vertical de 60 s para LinkedIn es §4.2 G.
 
 ### 11.3 Estructura del README (escaparate)
-1. **Cabecera:** logo, lema, insignias (pruebas, licencia) y botones **Probar la demo**, **Ver el vídeo**, **Descargar APK** (GitHub Releases).
+1. **Cabecera:** logo, lema, insignias (pruebas, licencia) y botones **Probar la demo** y **Descargar APK** (GitHub Releases).
 2. **GIF de 10 s:** modo avión → foto → propuesta aceptada → firma → PDF.
 3. **El problema** en 3 líneas y **para quién** (los 3 roles).
 4. **Qué hace:** 6 bloques con captura (offline real, checklist RITE, F-gas calculado, IA que propone, firma y PDF, panel de oficina).
@@ -688,9 +690,9 @@ Regla diaria: al acabar el día, `fvm flutter test` en verde y un commit. Estima
 | **11** · IA I y órdenes | `_shared/gemini.ts` (cabecera, `inlineData`, `thinkingConfig`) e `inspecta.ts` (membresía, cliente `service_role`, reservas, idempotencia antes del cupo) con `Deno.test` (0,3) · `leer-placa` y `analizar-foto` (0,3) · `IaQueue` aparte con concurrencia 2, que lanza cuando objetivo y padres ya subieron, trata el 409 `objetivo_no_sincronizado` como espera y respeta «solo wifi» (0,2) · O2 Órdenes con formulario plano (0,2) | 1,0 | `probar_ia.mjs` lee una placa propia y analiza una foto propia; repetir la llamada no vuelve a cobrar; un usuario ajeno recibe 403 sin reservar cupo; el pull no espera a la IA; la oficina crea una orden y llega al técnico |
 | **12** · IA II y eval | `transcribir-nota` (ids compuestos, normalización, coincidencia aproximada) con `Deno.test` (0,3) · T9 bandeja: placa campo a campo, recuadros, Aceptar / Editar / Descartar, Escuchar, gravedad humana; `decisiones_ia` y propuesta tardía como nota interna (decisión `tardia` con id determinista); `tactil_56dp_test` ampliado a T9 (0,4) · **Eval mínimo** con las 10 muestras del día 6 y decisión de `GEMINI_MODEL` (0,15) · Grabar respuestas reales en `assets/demo/ia/` (0,1) | 0,95 | Una nota con ruido rellena 3 ítems del equipo correcto; «siete coma dos» casa con «7,2» y una cita que no aparece se descarta (pruebas); «informe firmado + propuesta tardía = PDF y hash sin cambios» (prueba); tabla del eval guardada |
 | **13** · Panel, demo y despliegue | O1 Tablero: estados, incidencias abiertas, vencimientos a 30 días, pull de 15 s (0,3) · `DemoIaRepository`, marca de agua, «Simular sin cobertura», selector de rol, franja y «Reiniciar demo» (0,4) · Despliegue: decisión §14.14 (repositorio público o privado), `web/_headers`, build con `--no-web-resources-cdn`, Cloudflare Pages, APK arm64 con `--split-per-abi` en GitHub Releases públicas (o, con el repositorio privado, en un repositorio público solo de releases o en R2), comprobando su tamaño (0,3) | 1,0 | La URL pública funciona en ventana privada (Chrome y Firefox) y en el móvil sin pedir nada a dominios de Google; **el enlace de descarga del APK funciona sin iniciar sesión en GitHub** (ventana privada); el APK hace la visita completa en modo avión en otro Android; la oficina ve la firma con el hash verificado en menos de 30 s tras volver la red |
-| **14** · Campo, vídeo y README | **Prueba de campo** (azotea al sol y sótano o garaje, con guantes): 10 comprobaciones y batería en una visita de 30 min, en `docs/pruebas-campo.md` (0,2) · **Vídeo**: ensayo con datos en la nube, grabación, edición y subtítulos (0,55) · README: estructura, capturas y GIF (0,25) | 1,0 | Vídeo de 60-90 s exportado y subido (no listado); comprobaciones de campo anotadas |
-| **15** · Cierre y **colchón 2** | README final, `docs/normativa.md` con los [A VERIFICAR], revisión de secretos en `git log`, etiqueta `v0.1.0` (0,15) · Resto del día: colchón (0,85) | 0,15 | Candidatura lista: README con demo, vídeo y APK funcionando desde sus enlaces |
-**Ruta crítica:** días 2-4-7-10 (dominio, checklist, PDF, sincronización). En la semana 1, dos gestiones sin las que se para la IA: la llamada de 30 min con un técnico mantenedor (día 5; decisión 14.10) y **pedir acceso con permiso escrito a 1-2 instalaciones** para la recogida del día 6 y la toma de azotea del vídeo (decisión 14.10).
+| **14** · Campo y README | **Prueba de campo** (azotea al sol y sótano o garaje, con guantes): 10 comprobaciones y batería en una visita de 30 min, en `docs/pruebas-campo.md` (0,2) · README: estructura, capturas de cada pantalla y **GIF de 10-15 s** (modo avión → foto → propuesta aceptada → firma → PDF), grabado con `scrcpy` y convertido a GIF (0,4) · Resto: colchón (0,4) | 0,6 | Capturas y GIF en `docs/media/`, visibles en el README de GitHub; comprobaciones de campo anotadas |
+| **15** · Cierre y **colchón 2** | README final, `docs/normativa.md` con los [A VERIFICAR], revisión de secretos en `git log`, etiqueta `v0.1.0` (0,15) · Resto del día: colchón (0,85) | 0,15 | Candidatura lista: README con capturas, GIF, demo y APK funcionando desde sus enlaces |
+**Ruta crítica:** días 2-4-7-10 (dominio, checklist, PDF, sincronización). En la semana 1, dos gestiones sin las que se para la IA: la llamada de 30 min con un técnico mantenedor (día 5; decisión 14.10) y **pedir acceso con permiso escrito a 1-2 instalaciones** para la recogida de fotos y audios del día 6 (decisión 14.10).
 
 **Recortes ya aplicados de entrada** (son §4.2, en este orden si sobra tiempo): A plantilla 4 y F5 completo · B O4 y CSV F-gas · C eval ampliado · D O3 y O6 · E `redactar-resumen` · F pdf.js y PDF incrustado en web · G aviso de versión, `privacidad.html`, vista de lista, TalkBack y vídeo vertical · H QR.
 
@@ -763,6 +765,8 @@ Regla diaria: al acabar el día, `fvm flutter test` en verde y un commit. Estima
 17. **Idioma del README.** *Recomendación:* español, con un párrafo final de tres líneas en inglés por si lo leen revisores internacionales (opcional).
 18. **Gemini API o Vertex AI para producción.** *Recomendación:* Gemini API (Tier 1) para el MVP con datos ficticios o propios; para un cliente real, Vertex AI en una región de la UE o las condiciones y cláusulas de Google Cloud revisadas por un jurista (§10).
 19. **Interpretación de la potencia de la Tabla 3.1.** *Recomendación:* calcular con la potencia de la instalación (lo prudente) hasta verificar si «Pn» se lee por generador (§3.3), y preguntarlo en la llamada con el técnico.
+
+20. **Vídeo de presentación.** *Decidido por Pau:* **no hay vídeo.** El repositorio basta. En su lugar, capturas y un GIF de 10-15 s en el README (día 14). Libera 0,4 d que pasan a colchón. El guion de §11.2 queda como guion del GIF.
 
 ---
 
