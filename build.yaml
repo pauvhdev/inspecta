@@ -1,0 +1,26 @@
+# Opciones de drift (DISEÑO.md §8.2, «Mappers Drift↔Postgres», y §12, día 2).
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          # Para `drift_dev make-migrations`: esquemas versionados en
+          # drift_schemas/ y pruebas de migración en test/drift/.
+          databases:
+            inspecta: lib/data/local/app_database.dart
+          schema_dir: drift_schemas/
+          test_dir: test/drift/
+
+          # La clave JSON de `toJson`/`fromJson` es el nombre de columna SQL
+          # (`n_equipos`), que es el de Postgres: así un mapper genérico sirve
+          # para todas las tablas (lib/data/sync/mapper.dart).
+          use_sql_column_name_as_json_key: true
+
+          # Fechas como texto ISO-8601 en vez de segundos Unix. Con enteros se
+          # pierden los milisegundos y microsegundos que guarda Postgres (la
+          # fila bajada nunca sería igual a la del servidor) y la hora se lee
+          # siempre como local; en texto se conserva el instante exacto y si
+          # era UTC. Drift compara estas columnas con `julianday`. Ver
+          # `tablas/comunes.dart` («Instantes en UTC»). Cambiarlo es una
+          # migración: la 1→2 convierte las dos columnas de fecha de v1.
+          store_date_time_values_as_text: true

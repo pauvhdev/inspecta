@@ -1,0 +1,514 @@
+{
+  "version": "2026-11",
+  "publicada": "2026-11-08",
+  "descripcion": "Cifras normativas de Inspecta como datos versionados (DISEÑO.md §7.3). Cambiar una cifra = nueva versión de este fichero con su prueba. Cada informe firmado guarda la versión con la que se calculó.",
+  "fuentes": {
+    "reg_2024_573": {
+      "titulo": "Reglamento (UE) 2024/573 del Parlamento Europeo y del Consejo, de 7 de febrero de 2024, sobre los gases fluorados de efecto invernadero (DO L, 2024/573, 20.2.2024)",
+      "url": "https://eur-lex.europa.eu/legal-content/ES/TXT/HTML/?uri=CELEX:32024R0573",
+      "consultada": "2026-11-08",
+      "nota": "EUR-Lex no registra modificaciones: la versión vigente es la de 20.2.2024. Las correcciones de errores en español R(01) (art. 26.6), R(04) («enfriador» pasa a «enfriadora») y R(05) (arts. 10, 12.1, 13.6, 13.9, 13.11, 13.12, 13.19, 22, 23, 32 y anexo IV) no tocan los anexos I, II y VI ni los arts. 4.5, 5, 6, 13.3 y 13.4."
+    },
+    "reg_ejecucion_2024_2215": {
+      "titulo": "Reglamento de Ejecución (UE) 2024/2215, requisitos mínimos de certificación (art. 3.2)",
+      "url": "https://eur-lex.europa.eu/legal-content/ES/TXT/HTML/?uri=CELEX:32024R2215",
+      "consultada": "2026-11-08"
+    },
+    "unep_mezclas": {
+      "titulo": "Secretaría del Ozono del PNUMA: lista de sustancias y mezclas (composición en masa de las mezclas ASHRAE)",
+      "url": "https://ozone.unep.org/node/15421",
+      "consultada": "2026-11-08",
+      "nota": "Composición cotejada con la lista de refrigerantes de Wikipedia (que cita ANSI/ASHRAE 34 y fichas del fabricante) y, para el R-448A, con Climalife Connect #24 (2024), que da el mismo PCG de 1386. Las dos fuentes coinciden en todas las mezclas."
+    },
+    "rite": {
+      "titulo": "Real Decreto 1027/2007, Reglamento de Instalaciones Térmicas en los Edificios (texto consolidado, última actualización publicada el 02/08/2022)",
+      "url": "https://www.boe.es/buscar/act.php?id=BOE-A-2007-15820",
+      "consultada": "2026-11-08",
+      "nota": "Tabla 3.1 de la IT 3.3 en la redacción del RD 56/2016 (disposición final 3.1)."
+    },
+    "iplo_nl": {
+      "titulo": "IPLO (punto de información del Gobierno de los Países Bajos): F-gassen para inspectores, ejemplo de R-454B",
+      "url": "https://iplo.nl/thema/lucht/ozon-en-f-gassen/werkzaamheden/omgevingsdiensten-inspecteurs/",
+      "consultada": "2026-11-08",
+      "nota": "Fuente secundaria. Aplica el criterio en kg del anexo II a la fracción de HFO de una mezcla (33 kg de R-454B → 10,2 kg de HFO → cada 6 meses). Climalife, en cambio, trata las mezclas HFC/HFO solo en t CO2-eq."
+    }
+  },
+  "refrigerantes": [
+    {
+      "codigo": "R-32",
+      "nombre": "HFC-32 (difluorometano)",
+      "anexo": "I",
+      "seccion": 1,
+      "pcg": 675,
+      "calculado": false,
+      "composicion": [],
+      "fuente": "Reglamento (UE) 2024/573, anexo I, sección 1 (PCG a 100 años, IPCC AR4, nota 2 del anexo)",
+      "verificada": true
+    },
+    {
+      "codigo": "R-125",
+      "nombre": "HFC-125 (pentafluoroetano)",
+      "anexo": "I",
+      "seccion": 1,
+      "pcg": 3500,
+      "calculado": false,
+      "composicion": [],
+      "fuente": "Reglamento (UE) 2024/573, anexo I, sección 1 (IPCC AR4)",
+      "verificada": true
+    },
+    {
+      "codigo": "R-134a",
+      "nombre": "HFC-134a (1,1,1,2-tetrafluoroetano)",
+      "anexo": "I",
+      "seccion": 1,
+      "pcg": 1430,
+      "calculado": false,
+      "composicion": [],
+      "fuente": "Reglamento (UE) 2024/573, anexo I, sección 1 (IPCC AR4)",
+      "verificada": true
+    },
+    {
+      "codigo": "R-143a",
+      "nombre": "HFC-143a (1,1,1-trifluoroetano)",
+      "anexo": "I",
+      "seccion": 1,
+      "pcg": 4470,
+      "calculado": false,
+      "composicion": [],
+      "fuente": "Reglamento (UE) 2024/573, anexo I, sección 1 (IPCC AR4)",
+      "verificada": true
+    },
+    {
+      "codigo": "R-1234yf",
+      "nombre": "HFC-1234yf (2,3,3,3-tetrafluoropropeno, HFO)",
+      "anexo": "II",
+      "seccion": 1,
+      "pcg": 0.501,
+      "calculado": false,
+      "composicion": [],
+      "fuente": "Reglamento (UE) 2024/573, anexo II, sección 1 (IPCC AR6, nota 2 del anexo)",
+      "verificada": true
+    },
+    {
+      "codigo": "R-1234ze",
+      "nombre": "HFC-1234ze e isómeros (HFO)",
+      "anexo": "II",
+      "seccion": 1,
+      "pcg": 1.37,
+      "calculado": false,
+      "composicion": [],
+      "fuente": "Reglamento (UE) 2024/573, anexo II, sección 1 (IPCC AR6)",
+      "verificada": true
+    },
+    {
+      "codigo": "R-410A",
+      "nombre": "R-410A (R-32/125)",
+      "anexo": "I",
+      "seccion": 1,
+      "pcg": 2087.5,
+      "calculado": true,
+      "composicion": [
+        { "componente": "R-32", "porcentaje_masa": 50 },
+        { "componente": "R-125", "porcentaje_masa": 50 }
+      ],
+      "fuente": "Reglamento (UE) 2024/573, anexo VI (media ponderada en masa) con los PCG del anexo I; composición: unep_mezclas",
+      "verificada": true
+    },
+    {
+      "codigo": "R-407C",
+      "nombre": "R-407C (R-32/125/134a)",
+      "anexo": "I",
+      "seccion": 1,
+      "pcg": 1773.85,
+      "calculado": true,
+      "composicion": [
+        { "componente": "R-32", "porcentaje_masa": 23 },
+        { "componente": "R-125", "porcentaje_masa": 25 },
+        { "componente": "R-134a", "porcentaje_masa": 52 }
+      ],
+      "fuente": "Reglamento (UE) 2024/573, anexo VI con los PCG del anexo I; composición: unep_mezclas",
+      "verificada": true
+    },
+    {
+      "codigo": "R-404A",
+      "nombre": "R-404A (R-125/143a/134a)",
+      "anexo": "I",
+      "seccion": 1,
+      "pcg": 3921.6,
+      "calculado": true,
+      "composicion": [
+        { "componente": "R-125", "porcentaje_masa": 44 },
+        { "componente": "R-143a", "porcentaje_masa": 52 },
+        { "componente": "R-134a", "porcentaje_masa": 4 }
+      ],
+      "fuente": "Reglamento (UE) 2024/573, anexo VI con los PCG del anexo I; composición: unep_mezclas",
+      "verificada": true
+    },
+    {
+      "codigo": "R-407A",
+      "nombre": "R-407A (R-32/125/134a)",
+      "anexo": "I",
+      "seccion": 1,
+      "pcg": 2107,
+      "calculado": true,
+      "composicion": [
+        { "componente": "R-32", "porcentaje_masa": 20 },
+        { "componente": "R-125", "porcentaje_masa": 40 },
+        { "componente": "R-134a", "porcentaje_masa": 40 }
+      ],
+      "fuente": "Reglamento (UE) 2024/573, anexo VI con los PCG del anexo I; composición: unep_mezclas",
+      "verificada": true
+    },
+    {
+      "codigo": "R-507A",
+      "nombre": "R-507A (R-125/143a)",
+      "anexo": "I",
+      "seccion": 1,
+      "pcg": 3985,
+      "calculado": true,
+      "composicion": [
+        { "componente": "R-125", "porcentaje_masa": 50 },
+        { "componente": "R-143a", "porcentaje_masa": 50 }
+      ],
+      "fuente": "Reglamento (UE) 2024/573, anexo VI con los PCG del anexo I; composición: unep_mezclas",
+      "verificada": true
+    },
+    {
+      "codigo": "R-422D",
+      "nombre": "R-422D (R-125/134a/600a)",
+      "anexo": "I",
+      "seccion": 1,
+      "pcg": 2728.95,
+      "calculado": true,
+      "composicion": [
+        { "componente": "R-125", "porcentaje_masa": 65.1 },
+        { "componente": "R-134a", "porcentaje_masa": 31.5 },
+        { "componente": "R-600a", "porcentaje_masa": 3.4 }
+      ],
+      "fuente": "Reglamento (UE) 2024/573, anexo VI con los PCG del anexo I y el del isobutano del propio anexo VI (0); composición: unep_mezclas",
+      "verificada": true
+    },
+    {
+      "codigo": "R-448A",
+      "nombre": "R-448A (R-32/125/1234yf/134a/1234ze)",
+      "anexo": "I",
+      "seccion": 1,
+      "pcg": 1385.9961,
+      "calculado": true,
+      "composicion": [
+        { "componente": "R-32", "porcentaje_masa": 26 },
+        { "componente": "R-125", "porcentaje_masa": 26 },
+        { "componente": "R-1234yf", "porcentaje_masa": 20 },
+        { "componente": "R-134a", "porcentaje_masa": 21 },
+        { "componente": "R-1234ze", "porcentaje_masa": 7 }
+      ],
+      "fuente": "Reglamento (UE) 2024/573, anexo VI con los PCG de los anexos I y II; composición: unep_mezclas (Climalife da el mismo resultado, 1386)",
+      "verificada": true
+    },
+    {
+      "codigo": "R-449A",
+      "nombre": "R-449A (R-32/125/1234yf/134a)",
+      "anexo": "I",
+      "seccion": 1,
+      "pcg": 1396.161753,
+      "calculado": true,
+      "composicion": [
+        { "componente": "R-32", "porcentaje_masa": 24.3 },
+        { "componente": "R-125", "porcentaje_masa": 24.7 },
+        { "componente": "R-1234yf", "porcentaje_masa": 25.3 },
+        { "componente": "R-134a", "porcentaje_masa": 25.7 }
+      ],
+      "fuente": "Reglamento (UE) 2024/573, anexo VI con los PCG de los anexos I y II; composición: unep_mezclas",
+      "verificada": true
+    },
+    {
+      "codigo": "R-452A",
+      "nombre": "R-452A (R-32/125/1234yf)",
+      "anexo": "I",
+      "seccion": 1,
+      "pcg": 2139.4003,
+      "calculado": true,
+      "composicion": [
+        { "componente": "R-32", "porcentaje_masa": 11 },
+        { "componente": "R-125", "porcentaje_masa": 59 },
+        { "componente": "R-1234yf", "porcentaje_masa": 30 }
+      ],
+      "fuente": "Reglamento (UE) 2024/573, anexo VI con los PCG de los anexos I y II; composición: unep_mezclas",
+      "verificada": true
+    },
+    {
+      "codigo": "R-454B",
+      "nombre": "R-454B (R-32/1234yf)",
+      "anexo": "I",
+      "seccion": 1,
+      "pcg": 465.230811,
+      "calculado": true,
+      "composicion": [
+        { "componente": "R-32", "porcentaje_masa": 68.9 },
+        { "componente": "R-1234yf", "porcentaje_masa": 31.1 }
+      ],
+      "fuente": "Reglamento (UE) 2024/573, anexo VI con los PCG de los anexos I y II; composición: unep_mezclas",
+      "verificada": true
+    },
+    {
+      "codigo": "R-513A",
+      "nombre": "R-513A (R-1234yf/134a)",
+      "anexo": "I",
+      "seccion": 1,
+      "pcg": 629.48056,
+      "calculado": true,
+      "composicion": [
+        { "componente": "R-1234yf", "porcentaje_masa": 56 },
+        { "componente": "R-134a", "porcentaje_masa": 44 }
+      ],
+      "fuente": "Reglamento (UE) 2024/573, anexo VI con los PCG de los anexos I y II; composición: unep_mezclas",
+      "verificada": true
+    }
+  ],
+  "componentes_anexo_vi": [
+    {
+      "codigo": "R-600a",
+      "nombre": "isobutano (no fluorado; solo como componente de mezclas)",
+      "pcg": 0,
+      "fuente": "Reglamento (UE) 2024/573, anexo VI (valor 0, WMO 2018)",
+      "verificada": true
+    }
+  ],
+  "fgas": {
+    "art5": {
+      "fuente": "Reglamento (UE) 2024/573, art. 5, apartados 1 y 6",
+      "verificada": true,
+      "anexo_i": {
+        "umbral_sujecion_t": 5,
+        "umbral_hermetico_t": 10,
+        "franjas_t": [
+          { "desde": 5, "hasta": 50, "meses": 12, "meses_con_deteccion": 24 },
+          { "desde": 50, "hasta": 500, "meses": 6, "meses_con_deteccion": 12 },
+          { "desde": 500, "hasta": null, "meses": 3, "meses_con_deteccion": 6 }
+        ]
+      },
+      "anexo_ii_seccion_1": {
+        "umbral_sujecion_kg": 1,
+        "umbral_hermetico_kg": 2,
+        "franjas_kg": [
+          { "desde": 1, "hasta": 10, "meses": 12, "meses_con_deteccion": 24 },
+          { "desde": 10, "hasta": 100, "meses": 6, "meses_con_deteccion": 12 },
+          { "desde": 100, "hasta": null, "meses": 3, "meses_con_deteccion": 6 }
+        ],
+        "puros_calculados_en_mvp": false,
+        "nota_puros": "Gases puros del anexo II (HFO como R-1234yf o R-1234ze): no calculado en el MVP (DISEÑO.md §3.2 y §4.3). Las franjas en kg están comprobadas en el art. 5, pero la app no las aplica a gases puros."
+      },
+      "mezclas_con_anexo_ii": {
+        "aplicar_criterio_kg_a_la_fraccion": true,
+        "verificada": false,
+        "nota": "[A VERIFICAR] Una mezcla HFC/HFO (p. ej., R-454B) es un HFC del anexo I (art. 3.4 y nota 1 del anexo I) y se calcula en t CO2-eq. No está claro si además cuenta el criterio en kg del anexo II sobre su fracción de HFO: IPLO (NL) lo aplica y Climalife no. Lo más prudente: se calculan los dos y manda el más exigente."
+      },
+      "excepcion_hermetico_residencial": {
+        "umbral_kg": 3,
+        "automatizada": false,
+        "fuente": "Reglamento (UE) 2024/573, art. 5.1, párrafo tercero",
+        "verificada": false,
+        "nota": "[A VERIFICAR] El texto dice «menos de 3 kilogramos de gases fluorados de efecto invernadero», sin decir de qué anexo. No se automatiza: la marca el técnico (DISEÑO.md §3.3)."
+      }
+    },
+    "art6": {
+      "fuente": "Reglamento (UE) 2024/573, art. 6, apartados 1 y 3",
+      "verificada": true,
+      "umbral_deteccion_t": 500,
+      "umbral_deteccion_kg_anexo_ii": 100,
+      "meses_revision_detector": 12
+    },
+    "art4_5": {
+      "fuente": "Reglamento (UE) 2024/573, art. 4.5, párrafo segundo",
+      "verificada": true,
+      "desde_horas_funcionamiento": 24,
+      "hasta_meses": 1,
+      "nota": "Solo obliga si el aparato está sujeto a control de fugas (art. 5.1). «Desde» es lo antes posible: 24 h de funcionamiento tras la reparación."
+    },
+    "art13_4": {
+      "fuente": "Reglamento (UE) 2024/573, art. 13.4",
+      "verificada": true,
+      "desde": "2026-01-01",
+      "umbral_pcg": 2500,
+      "categorias": ["aire_acondicionado_bomba_calor"],
+      "solo_anexo_i": true,
+      "excepciones_hasta": "2032-01-01",
+      "origenes": {
+        "virgen": { "permitido": false, "datos": [] },
+        "regenerado": {
+          "permitido": true,
+          "datos": ["regenerado_lote", "regenerado_etiqueta_foto_id"],
+          "fuente": "art. 13.4, letra a), y art. 12.7 (etiqueta con «regenerado», número de lote y nombre y dirección del centro de regeneración)"
+        },
+        "reciclado": {
+          "permitido": true,
+          "datos": ["reciclado_recuperado_por", "reciclado_declaracion"],
+          "fuente": "art. 13.4, letra b): recuperado de aparatos de aire acondicionado o bombas de calor y usado solo por la empresa que lo recuperó o por aquella para la que se recuperó"
+        }
+      }
+    },
+    "art13_3": {
+      "fuente": "Reglamento (UE) 2024/573, art. 13.3",
+      "verificada": false,
+      "modo": "aviso",
+      "umbral_pcg": 2500,
+      "desde": "2025-01-01",
+      "categorias": ["refrigeracion"],
+      "excepciones_hasta": "2030-01-01",
+      "nota": "[A VERIFICAR] Texto leído el 08/11/2026: desde el 1/1/2025, prohibido el gas de PCG ≥ 2.500 en el mantenimiento de cualquier aparato de refrigeración (antes, desde 40 t CO2-eq); regenerado (etiqueta art. 12.7) y reciclado (de la propia empresa o para ella) permitidos hasta el 1/1/2030; exentos el equipo militar y las aplicaciones por debajo de -50 °C. En el MVP solo avisa y no bloquea (DISEÑO.md §3.2 y §4.3)."
+    },
+    "art13_5": {
+      "fuente": "Reglamento (UE) 2024/573, art. 13.5",
+      "verificada": true,
+      "modo": "aviso",
+      "desde": "2032-01-01",
+      "umbral_pcg": 750,
+      "categorias": ["refrigeracion"],
+      "nota": "Desde el 1/1/2032, prohibido el gas de PCG ≥ 750 en el mantenimiento de aparatos fijos de refrigeración, salvo las enfriadoras. En el MVP solo avisa."
+    }
+  },
+  "rite": {
+    "fuente": "RD 1027/2007 (RITE), art. 26.6 e IT 3.3, Tabla 3.1",
+    "umbral_regimen_mensual_kw": 70,
+    "umbral_verificada": false,
+    "nota_umbral": "[A VERIFICAR] Art. 26.6: «potencia térmica nominal total instalada en generación de calor o frío» ≤ 70 kW o > 70 kW. El MVP mide con la potencia de la instalación (la mayor entre lo declarado y la suma de los equipos) y con la mayor de frío y calor, lo más prudente (DISEÑO.md §3.2 y §7.2).",
+    "regimen_mas_de_70_kw": {
+      "meses": 1,
+      "plantilla_en_mvp": false,
+      "texto": "Preventivo RITE mensual (instalación de más de 70 kW): plantilla fuera del MVP",
+      "fuente": "IT 3.3, Tabla 3.1, fila «Instalaciones de potencia superior a 70 kW»: mensual"
+    },
+    "supervision_remota": {
+      "potencia_max_kw": 70,
+      "meses_max": 24,
+      "aplicacion_automatica": false,
+      "fuente": "IT 3.3, párrafo tras la Tabla 3.1: «con supervisión remota en continuo, la periodicidad se puede incrementar hasta 2 años, siempre que estén garantizadas las condiciones de seguridad y eficiencia energética»",
+      "verificada": true
+    },
+    "tabla_3_1": [
+      {
+        "clave": "calentador_acs_gas_hasta_24_4",
+        "familia": "calentador_acs_gas",
+        "pn_mayor_que_kw": null,
+        "pn_hasta_kw": 24.4,
+        "meses_vivienda": 60,
+        "meses_otros": 24,
+        "texto_boe": "Calentadores de agua caliente sanitaria a gas Pn ≤ 24,4 kW: 5 años / 2 años",
+        "verificada": true
+      },
+      {
+        "clave": "calentador_acs_gas_24_4_a_70",
+        "familia": "calentador_acs_gas",
+        "pn_mayor_que_kw": 24.4,
+        "pn_hasta_kw": 70,
+        "meses_vivienda": 24,
+        "meses_otros": 12,
+        "texto_boe": "Calentadores de agua caliente sanitaria a gas 24,4 kW < Pn ≤ 70 kW: 2 años / anual",
+        "verificada": true
+      },
+      {
+        "clave": "caldera_mural_gas_hasta_70",
+        "familia": "caldera_mural_gas",
+        "pn_mayor_que_kw": null,
+        "pn_hasta_kw": 70,
+        "meses_vivienda": 24,
+        "meses_otros": 12,
+        "texto_boe": "Calderas murales a gas Pn ≤ 70 kW: 2 años / anual",
+        "verificada": true
+      },
+      {
+        "clave": "resto_calefaccion_hasta_70",
+        "familia": "resto_calefaccion",
+        "pn_mayor_que_kw": null,
+        "pn_hasta_kw": 70,
+        "meses_vivienda": 12,
+        "meses_otros": 12,
+        "texto_boe": "Resto instalaciones calefacción Pn ≥70 kW: anual / anual",
+        "verificada": false,
+        "nota": "[A VERIFICAR] El BOE consolidado dice «Pn ≥70 kW», que choca con la fila «más de 70 kW: mensual». Se lee como ≤ 70 kW. No la usa ningún tipo de equipo del MVP."
+      },
+      {
+        "clave": "aire_acondicionado_hasta_12",
+        "familia": "aire_acondicionado",
+        "pn_mayor_que_kw": null,
+        "pn_hasta_kw": 12,
+        "meses_vivienda": 48,
+        "meses_otros": 24,
+        "texto_boe": "Aire acondicionado Pn ≤ 12 kW: 4 años / 2 años",
+        "verificada": true
+      },
+      {
+        "clave": "aire_acondicionado_12_a_70",
+        "familia": "aire_acondicionado",
+        "pn_mayor_que_kw": 12,
+        "pn_hasta_kw": 70,
+        "meses_vivienda": 24,
+        "meses_otros": 12,
+        "texto_boe": "Aire acondicionado 12 kW < Pn ≤ 70 kW: 2 años / anual",
+        "verificada": true
+      },
+      {
+        "clave": "bomba_calor_acs_hasta_12",
+        "familia": "bomba_calor_acs",
+        "pn_mayor_que_kw": null,
+        "pn_hasta_kw": 12,
+        "meses_vivienda": 48,
+        "meses_otros": 24,
+        "texto_boe": "Bomba de calor para agua caliente sanitaria Pn ≤ 12 kW: 4 años / 2 años",
+        "verificada": true
+      },
+      {
+        "clave": "bomba_calor_acs_12_a_70",
+        "familia": "bomba_calor_acs",
+        "pn_mayor_que_kw": 12,
+        "pn_hasta_kw": 70,
+        "meses_vivienda": 24,
+        "meses_otros": 12,
+        "texto_boe": "Bomba de calor para agua caliente sanitaria 12 kW < Pn ≤ 70 kW: 2 años / anual",
+        "verificada": true
+      },
+      {
+        "clave": "solar_termica_hasta_14",
+        "familia": "solar_termica",
+        "pn_mayor_que_kw": null,
+        "pn_hasta_kw": 14,
+        "meses_vivienda": 12,
+        "meses_otros": 12,
+        "texto_boe": "Instalaciones solares térmicas Pn ≤ 14 kW: anual / anual",
+        "verificada": true
+      },
+      {
+        "clave": "solar_termica_mas_de_14",
+        "familia": "solar_termica",
+        "pn_mayor_que_kw": 14,
+        "pn_hasta_kw": null,
+        "meses_vivienda": 6,
+        "meses_otros": 6,
+        "texto_boe": "Instalaciones solares térmicas Pn > 14 kW: semestral / semestral",
+        "verificada": true
+      }
+    ],
+    "familia_por_tipo_equipo": {
+      "split": "aire_acondicionado",
+      "conductos": "aire_acondicionado",
+      "vrf": "aire_acondicionado",
+      "rooftop": "aire_acondicionado",
+      "enfriadora": "aire_acondicionado",
+      "bomba_calor": "aire_acondicionado",
+      "uta": "aire_acondicionado",
+      "otro": "aire_acondicionado"
+    },
+    "familia_por_tipo_equipo_verificada": false,
+    "nota_familia": "[A VERIFICAR] Todos los tipos del MVP son de climatización y usan la fila «Aire acondicionado». La bomba de calor de climatización va por esa fila (la de «Bomba de calor para ACS» tiene las mismas periodicidades). Pn de cada fila: se lee por equipo (DISEÑO.md §3.3)."
+  },
+  "tipos_certificado": [
+    { "codigo": "A1", "descripcion": "Todas las actividades del art. 2.1 con gases fluorados e hidrocarburos", "fuente": "Reglamento de Ejecución (UE) 2024/2215, art. 3.2.a)", "verificada": true },
+    { "codigo": "A2", "descripcion": "Como A1, limitado a cargas de menos de 3 kg (o menos de 6 kg en herméticos etiquetados)", "fuente": "Reglamento de Ejecución (UE) 2024/2215, art. 3.2.b)", "verificada": true },
+    { "codigo": "B", "descripcion": "Actividades del art. 2.1 con dióxido de carbono (CO2)", "fuente": "Reglamento de Ejecución (UE) 2024/2215, art. 3.2.c)", "verificada": true },
+    { "codigo": "C", "descripcion": "Actividades del art. 2.1 con amoniaco (NH3)", "fuente": "Reglamento de Ejecución (UE) 2024/2215, art. 3.2.d)", "verificada": true },
+    { "codigo": "D", "descripcion": "Recuperación (art. 2.1.d) en aparatos de menos de 3 kg (o menos de 6 kg en herméticos etiquetados)", "fuente": "Reglamento de Ejecución (UE) 2024/2215, art. 3.2.e)", "verificada": true },
+    { "codigo": "E", "descripcion": "Control de fugas (art. 2.1.a) sin acceder al circuito de refrigeración", "fuente": "Reglamento de Ejecución (UE) 2024/2215, art. 3.2.f)", "verificada": true },
+    { "codigo": "I.1", "descripcion": "Certificado personal español del RD 115/2017 (denominación a comprobar)", "fuente": "RD 115/2017", "verificada": false },
+    { "codigo": "I.2", "descripcion": "Certificado personal español del RD 115/2017 (denominación a comprobar)", "fuente": "RD 115/2017", "verificada": false }
+  ]
+}
