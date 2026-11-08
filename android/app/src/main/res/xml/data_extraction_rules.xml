@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+: nada de la app va a la copia en la nube ni pasa al móvil
+     nuevo. Ahí está la sesión de Supabase (quien tuviera la copia entraría
+     con tu cuenta) y la serie de numeración de informes del aparato: si se
+     restaurara en otro móvil, dos aparatos numerarían en la misma serie
+     (DISEÑO.md §7.9). Los partes no se pierden: viven en Supabase y bajan al
+     iniciar sesión. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" path="."/>
+        <exclude domain="file" path="."/>
+        <exclude domain="database" path="."/>
+        <exclude domain="sharedpref" path="."/>
+        <exclude domain="external" path="."/>
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" path="."/>
+        <exclude domain="file" path="."/>
+        <exclude domain="database" path="."/>
+        <exclude domain="sharedpref" path="."/>
+        <exclude domain="external" path="."/>
+    </device-transfer>
+</data-extraction-rules>

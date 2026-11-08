@@ -46,3 +46,6 @@ app.*.map.json
 
 # Configuración local con claves (usar env.example.json como plantilla)
 env.json
+
+# FVM: caché local de la versión de Flutter
+.fvm/
