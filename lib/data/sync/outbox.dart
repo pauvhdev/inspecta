@@ -205,6 +205,26 @@ class Outbox {
         ),
       );
 
+  /// Quita de la cola las entradas de una fila que aún no han salido del
+  /// aparato (0 intentos y sin bloquear), para deshacer una inserción que el
+  /// servidor no dejaría borrar (tablas de solo inserción, p. ej.
+  /// `resoluciones_incidencia`). Devuelve false, sin tocar nada, si no hay
+  /// ninguna entrada (ya subió) o si alguna ya se intentó subir.
+  Future<bool> retirarSiNoHaSalido(String entity, String rowId) =>
+      _db.transaction(() async {
+        final entradas = await (_db.select(
+          _db.outboxEntries,
+        )..where((t) => t.entity.equals(entity) & t.rowId.equals(rowId))).get();
+        if (entradas.isEmpty ||
+            entradas.any((e) => e.attempts > 0 || e.isBlocked)) {
+          return false;
+        }
+        await (_db.delete(
+          _db.outboxEntries,
+        )..where((t) => t.seq.isIn([for (final e in entradas) e.seq]))).go();
+        return true;
+      });
+
   /// Ids con escrituras pendientes. El pull no debe pisarlos: lo local es más
   /// nuevo que lo que hay en el servidor.
   Future<Set<String>> pendingRowIds(String entity) async {

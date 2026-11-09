@@ -927,3 +927,22 @@ Esquema Drift v2, normativa como datos, `fgas.dart`, `rite.dart` y las plantilla
 | Sugerencia de plantilla | Umbral fijo de 70 kW | Usa el umbral de la normativa versionada |
 
 Siguen abiertos: categoría de la enfriadora (se propone aire acondicionado y el técnico confirma), `movimientos_gas.regla_aplicada` sin valor para los avisos del 13.5, errata de la fila «Resto instalaciones calefacción» de la Tabla 3.1 en el BOE consolidado, certificados I.1 e I.2, y si `bomba_calor` es aire-agua o aire-aire (hoy no tiene plantilla preventiva). La nulabilidad de Drift hay que copiarla en `schema.sql` el día 9.
+
+### Día 3 (09/11/2026): lo que cambió al construir
+
+`DemoDatos`, `InspeccionRepository` y las pantallas T1 Hoy, T2 Visita y T3 Ficha. 408 pruebas en verde (31 nuevas: `estados_test`, `inspeccion_repository_test` y `pantallas_tecnico_test`, que recorre el hito del día a 360 dp de ancho), `flutter analyze` limpio y la web compila con `--no-web-resources-cdn` (la opción sigue existiendo en 3.47; falta comprobar en el navegador que no se piden fuentes a gstatic).
+
+| Tema | Antes | Ahora |
+|---|---|---|
+| Siembra de la demo | 8 equipos, 5 órdenes de hoy y 2 informes firmados con su PDF (§11.1) | `lib/data/repositories/demo_datos.dart`, ids UUID v5 (`urn:inspecta:demo`), sin encolar nada. Comunidad 14/15 kW declarados (equipos 13,5/15), hotel 62/68 (60,6/67,2) y oficina 210/30 (207/29,5, más de 70 kW por la enfriadora). Plantilla de cada `orden_equipos` con `sugerirPlantillas`. 4 órdenes de hoy del técnico de la demo y 1 de otro técnico. Los 2 informes firmados (preventivo del hotel hace 330 días con una incidencia leve abierta, control de fugas de la oficina hace 170) llevan número `AAAA-DEMO-A-NNNN`, respuestas y controles, pero **todavía no firmas ni PDF**: llegan los días 6 y 7. La prueba comprueba que ninguna instalación da el aviso de potencia y que la oficina pasa de 70 kW |
+| Uso de la comunidad | — | «Restantes usos» (zonas comunes), no vivienda **[A VERIFICAR]** |
+| `estado_equipo` en local | «La app la recalcula con la misma lógica» | `aplicarFirma` (`lib/dominio/estados.dart`) parte de la fila que hay y le suma la visita firmada; no recalcula desde las inspecciones locales, que en la nube son solo 60 días. Solo el `preventivo` reinicia `ultimo_preventivo_at` **[A VERIFICAR con el técnico: si un correctivo completo cuenta]**; la fecha del control de fugas es la de la firma (`controles_fugas` no tiene fecha propia). El trigger de `schema.sql` (día 9) debe hacer lo mismo |
+| Estado de la orden en local | Derivado de la inspección | `estadoOrdenLocal`: cancelada gana; inspección firmada → firmada; en curso o lista → en curso; firmada en el servidor no vuelve atrás; solo descartadas → pendiente. La fila de `ordenes_trabajo` no se toca ni se encola |
+| «Resuelta en esta visita» | Fila en `resoluciones_incidencia` | Igual, y «Deshacer» solo mientras la entrada no ha salido del aparato (`Outbox.retirarSiNoHaSalido`), porque la tabla es de solo inserción **[A VERIFICAR el día 10 con el `SyncEngine`: una entrada que se está subiendo aún tiene 0 intentos]** |
+| T1 «hora» de la tarjeta | Hora prevista | `ordenes_trabajo.fecha_prevista` es `date`: no hay hora prevista. La tarjeta enseña tipo, n.º de equipos y la hora a la que empezó la visita. **[A VERIFICAR]** si hace falta `hora_prevista` (migración v3). Hoy enseña también las órdenes de días anteriores sin terminar |
+| Píldora de sincronización | En la barra superior | Debajo de la barra, a todo el ancho: en la fila del título no cabía a 360 dp. De momento «Modo local · N sin subir»; conexión e IA llegan con el `SyncEngine` y la `IaQueue` |
+| Dirección → mapas | — | `url_launcher` 6.3.3 con una búsqueda de Google Maps |
+| Teclado numérico | `pad_numerico.dart` | Básico (`lib/design/pad_numerico.dart`, teclas de 72 dp, «Sin dato»); el +/− fino y grueso y el rango de T6 son del día 4 |
+| Ficha antes de empezar la visita | — | Editable (los datos del equipo no son hijos del informe); solo lectura con la visita firmada o descartada. «Leer placa» se ve inactivo con el motivo (cámara e IA, días 5 y 11) |
+| Hermético o detección sin dato | — | El bloque F-gas calcula como «no» (lo prudente) y lo dice |
+| Sesión | — | En la demo, el técnico ficticio (`DemoDatos.sesion`); en modo local sin demo, Hoy explica cómo arrancar la demo; en la nube llega con el día 9 |
