@@ -9,6 +9,8 @@ import '../../design/widgets.dart';
 import '../../dominio/tipos.dart';
 import '../checklist/checklist_pantalla.dart';
 import '../equipo/ficha_equipo_pantalla.dart';
+import '../firma/informe_pantalla.dart';
+import '../firma/revisar_pantalla.dart';
 import '../textos.dart';
 import 'anadir_equipo_pantalla.dart';
 
@@ -338,20 +340,46 @@ class _Acciones extends ConsumerWidget {
         ..add(const SizedBox(height: Gap.md))
         ..add(
           BotonPrimario(
+            key: const Key('revisar_firmar'),
             texto: 'Revisar y firmar',
             icono: Icons.draw_outlined,
-            onPressed: null,
-            motivoInactivo: v.obligatoriosPendientes > 0
-                ? 'Faltan ${v.obligatoriosPendientes} respuestas obligatorias.'
-                : 'Revisar y firmar llega en una próxima versión.',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => RevisarPantalla(ordenId: v.orden.id),
+              ),
+            ),
           ),
         );
+      if (v.obligatoriosPendientes > 0) {
+        children.add(
+          Padding(
+            padding: const EdgeInsets.only(top: Gap.xs),
+            child: Text(
+              'Faltan ${v.obligatoriosPendientes} respuestas obligatorias: '
+              'al revisar verás cuáles.',
+              textAlign: TextAlign.center,
+            ),
+          ),
+        );
+      }
     } else {
       children.add(
-        const Text(
-          'Informe cerrado: solo lectura.',
-          textAlign: TextAlign.center,
-        ),
+        v.inspeccion?.firmadaAt != null
+            ? BotonPrimario(
+                key: const Key('ver_informe'),
+                texto: 'Ver informe ${v.inspeccion!.numero ?? ''}',
+                icono: Icons.picture_as_pdf_outlined,
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) =>
+                        InformePantalla(inspeccionId: v.inspeccion!.id),
+                  ),
+                ),
+              )
+            : const Text(
+                'Visita descartada: solo lectura.',
+                textAlign: TextAlign.center,
+              ),
       );
     }
     return SafeArea(

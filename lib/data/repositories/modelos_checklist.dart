@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../../dominio/estados.dart';
 import '../../dominio/fgas.dart';
 import '../../dominio/normativa.dart' show OrigenGas;
@@ -30,6 +32,7 @@ class ChecklistEquipo {
     required this.incidencias,
     required this.movimientos,
     required this.controles,
+    this.fotos = const [],
   });
 
   final InspeccionEquipo inspeccionEquipo;
@@ -45,6 +48,14 @@ class ChecklistEquipo {
   final List<Incidencia> incidencias;
   final List<MovimientoGas> movimientos;
   final List<ControlFugas> controles;
+
+  /// Fotos de este equipo en la visita, sin las borradas.
+  final List<Foto> fotos;
+
+  List<Foto> fotosDe(String itemId) => [
+    for (final f in fotos)
+      if (f.itemPlantillaId == itemId) f,
+  ];
 
   bool get editable =>
       inspeccion.firmadaAt == null &&
@@ -107,4 +118,35 @@ class CargaGasBloqueada implements Exception {
   final CargaBloqueada validacion;
   @override
   String toString() => 'CargaGasBloqueada: ${validacion.motivo}';
+}
+
+/// Algo que impide firmar (T12): pulsable, lleva al ítem.
+class PendienteFirma {
+  const PendienteFirma({
+    required this.inspeccionEquipoId,
+    required this.equipo,
+    required this.indiceItem,
+    required this.texto,
+  });
+  final String? inspeccionEquipoId;
+  final String equipo;
+  final int? indiceItem;
+  final String texto;
+}
+
+/// Se intentó firmar con pendientes (doble barrera: T12 ya los enseña).
+class FirmaIncompleta implements Exception {
+  const FirmaIncompleta(this.pendientes);
+  final List<PendienteFirma> pendientes;
+  @override
+  String toString() => 'FirmaIncompleta: ${pendientes.length} pendientes';
+}
+
+/// Una firma dibujada en T13: nombre, cargo y el PNG (sin puntos ni tiempos,
+/// §10).
+class FirmaCapturada {
+  const FirmaCapturada({required this.nombre, this.cargo, required this.png});
+  final String nombre;
+  final String? cargo;
+  final Uint8List png;
 }

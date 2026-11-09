@@ -128,3 +128,21 @@ final fichaProvider = StreamProvider.family<FichaEquipo?, String>(
 final checklistProvider = StreamProvider.family<ChecklistEquipo?, String>(
   (ref, ieId) => ref.watch(inspeccionRepositoryProvider)!.watchChecklist(ieId),
 );
+
+/// T12 Revisar y firmar de una orden.
+final revisionProvider = StreamProvider.family<RevisionVisita?, String>(
+  (ref, ordenId) =>
+      ref.watch(inspeccionRepositoryProvider)!.watchRevision(ordenId),
+);
+
+/// T14: la inspección y si su cierre sigue en la cola.
+final informeProvider = StreamProvider.family<(Inspeccion, bool)?, String>(
+  (ref, id) => ref.watch(inspeccionRepositoryProvider)!.watchInforme(id),
+);
+
+/// Serie y letra del aparato para numerar (§7.9). En la demo, `DEMO-A`; en la
+/// nube saldrán de `miembros.serie_informes` y `dispositivos.letra` (día 9).
+final serieAparatoProvider = Provider<(String, String)?>(
+  (ref) =>
+      ref.watch(esDemoProvider) ? (DemoDatos.serie, DemoDatos.letra) : null,
+);

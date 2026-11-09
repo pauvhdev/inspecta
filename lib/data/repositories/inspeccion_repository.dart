@@ -1,11 +1,14 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:drift/drift.dart';
 
 import '../../core/ids.dart';
 import '../../dominio/estados.dart';
 import '../../dominio/fgas.dart';
-import '../../dominio/normativa.dart' show DiaCalendario, OrigenGas;
+import '../../dominio/normativa.dart'
+    show DiaCalendario, OrigenGas, enHoraLocal;
+import '../../informe/datos_informe.dart';
 import '../../dominio/plantillas.dart' show TipoIntervencion;
 import '../../dominio/rite.dart';
 import '../../dominio/tipos.dart';
@@ -205,6 +208,18 @@ HechosEquipo hechosDe(EstadoDeEquipo e) => HechosEquipo.desdeColumnas(
   ultimosValoresJson: e.ultimosValoresJson,
   incidenciasAbiertasJson: e.incidenciasAbiertasJson,
 );
+
+/// Todo lo que enseña T12 Revisar y firmar.
+class RevisionVisita {
+  const RevisionVisita({
+    required this.visita,
+    required this.checklists,
+    required this.pendientes,
+  });
+  final VistaVisita visita;
+  final List<ChecklistEquipo> checklists;
+  final List<PendienteFirma> pendientes;
+}
 
 class InspeccionRepository {
   InspeccionRepository(
@@ -880,6 +895,7 @@ class InspeccionRepository {
         _db.equipos,
         _db.estadoEquipo,
         _db.itemsPlantilla,
+        _db.fotos,
       ], () => cargarChecklist(inspeccionEquipoId));
 
   Future<ChecklistEquipo?> cargarChecklist(String inspeccionEquipoId) async {
@@ -934,6 +950,14 @@ class InspeccionRepository {
           await (_db.select(_db.controlesFugas)
                 ..where((x) => x.inspeccionEquipoId.equals(ie.id))
                 ..orderBy([(x) => OrderingTerm.asc(x.createdAt)]))
+              .get(),
+      fotos:
+          await (_db.select(_db.fotos)
+                ..where(
+                  (x) =>
+                      x.inspeccionEquipoId.equals(ie.id) & x.deletedAt.isNull(),
+                )
+                ..orderBy([(x) => OrderingTerm.asc(x.tomadaAt)]))
               .get(),
     );
   }
@@ -1180,6 +1204,561 @@ class InspeccionRepository {
     await _encolar('controles_fugas', fila.id, fila);
     return fila.id;
   });
+
+  // -------------------------------------------------------------------------
+  // Fotos, firma y cierre (días 5-7)
+  // -------------------------------------------------------------------------
+
+  /// Bucket privado de Storage (§8.3).
+  static const bucket = 'inspecta';
+
+  String _rutaInspeccion(Inspeccion i) =>
+      'empresas/${i.empresaId}/inspecciones/${i.id}';
+
+  /// Guarda los bytes en `blobs` y encola su subida. La entrada de fichero va
+  /// **antes** que la fila que la anuncia (§8.2): `entity` = `storage`,
+  /// `rowId` = id del blob y el payload lleva `{bucket, ruta, blob_id,
+  /// tabla, fila, mime}`, nunca los bytes.
+  Future<String> _guardarBlob({
+    required String origenId,
+    required String tabla,
+    required Uint8List bytes,
+    required String mime,
+    required String ruta,
+    String variante = 'original',
+  }) async {
+    final id = newId();
+    final sha = sha256De(bytes);
+    await _db
+        .into(_db.blobs)
+        .insert(
+          BlobLocal(
+            id: id,
+            origenId: origenId,
+            variante: variante,
+            bytes: bytes,
+            mime: mime,
+            sha256: sha,
+            bucket: bucket,
+            ruta: ruta,
+          ),
+        );
+    await _outbox.enqueueUpsert(
+      entity: 'storage',
+      rowId: id,
+      payload: {
+        'bucket': bucket,
+        'ruta': ruta,
+        'blob_id': id,
+        'tabla': tabla,
+        'fila': origenId,
+        'mime': mime,
+      },
+    );
+    return sha;
+  }
+
+  /// T7 (versión mínima del día 5): guarda una foto ligada a un ítem por
+  /// (`inspeccion_equipo_id`, `item_plantilla_id`), sin apuntar a la
+  /// respuesta (§8.2). Pendiente del día 5 completo: miniatura, variante de
+  /// 1.000 px, nitidez y brillo, y GPS.
+  Future<String> guardarFoto({
+    required String inspeccionEquipoId,
+    String? itemId,
+    String proposito = 'item',
+    required Uint8List bytes,
+    required String mime,
+    int? ancho,
+    int? alto,
+  }) => _db.transaction(() async {
+    final ie = await (_db.select(
+      _db.inspeccionEquipos,
+    )..where((x) => x.id.equals(inspeccionEquipoId))).getSingle();
+    final insp = await _inspeccionEditable(ie.inspeccionId);
+    final id = newId();
+    final ext = mime == 'image/png' ? 'png' : 'jpg';
+    final ruta = '${_rutaInspeccion(insp)}/fotos/$id.$ext';
+    final sha = await _guardarBlob(
+      origenId: id,
+      tabla: 'fotos',
+      bytes: bytes,
+      mime: mime,
+      ruta: ruta,
+    );
+    final now = _now;
+    final f = Foto(
+      id: id,
+      empresaId: insp.empresaId,
+      inspeccionId: insp.id,
+      inspeccionEquipoId: ie.id,
+      itemPlantillaId: itemId,
+      proposito: proposito,
+      ruta: ruta,
+      sha256: sha,
+      ancho: ancho,
+      alto: alto,
+      tomadaAt: now,
+      createdAt: now,
+      updatedAt: now,
+    );
+    await _db.into(_db.fotos).insert(f);
+    await _encolar('fotos', f.id, f);
+    return id;
+  });
+
+  /// Borrar una foto antes de firmar: borrado lógico (`deleted_at`), que es
+  /// un UPDATE que el servidor admite hasta la firma (§7.5).
+  Future<void> borrarFoto(String fotoId) => _db.transaction(() async {
+    final f = await (_db.select(
+      _db.fotos,
+    )..where((x) => x.id.equals(fotoId))).getSingle();
+    await _inspeccionEditable(f.inspeccionId);
+    final fila = f.copyWith(deletedAt: Value(_now), updatedAt: _now);
+    await _db.update(_db.fotos).replace(fila);
+    await _encolar('fotos', fila.id, fila);
+  });
+
+  /// Bytes originales de una foto, firma o informe; null si no están en el
+  /// aparato (en la nube se pedirían con URL firmada, §8.2).
+  Future<Uint8List?> bytesDe(String origenId) async =>
+      (await (_db.select(_db.blobs)
+                ..where(
+                  (b) =>
+                      b.origenId.equals(origenId) &
+                      b.variante.equals('original'),
+                )
+                ..limit(1))
+              .getSingleOrNull())
+          ?.bytes;
+
+  /// Lo que falta para poder firmar (F4.1): obligatorios sin responder,
+  /// mediciones obligatorias sin valor y fotos obligatorias sin foto (salvo
+  /// N.A.). Vacía = se puede firmar. Las propuestas de la IA sin decidir solo
+  /// avisan y llegarán con la IA.
+  Future<List<PendienteFirma>> pendientesDeFirma(String inspeccionId) async {
+    final ies =
+        await (_db.select(_db.inspeccionEquipos)
+              ..where((x) => x.inspeccionId.equals(inspeccionId))
+              ..orderBy([(x) => OrderingTerm.asc(x.createdAt)]))
+            .get();
+    final pendientes = <PendienteFirma>[];
+    if (ies.isEmpty) {
+      pendientes.add(
+        const PendienteFirma(
+          inspeccionEquipoId: null,
+          equipo: '',
+          indiceItem: null,
+          texto: 'La visita no tiene ningún equipo.',
+        ),
+      );
+    }
+    for (final ie in ies) {
+      final ch = (await cargarChecklist(ie.id))!;
+      final nombre = [
+        ch.equipo.tipo.wire,
+        if (ch.equipo.ubicacion != null) ch.equipo.ubicacion!,
+      ].join(' · ');
+      for (final (i, ic) in ch.items.indexed) {
+        final it = ic.item;
+        final r = ic.respuesta;
+        final na = r?.estado == 'na';
+        String? falta;
+        if (it.obligatorio && !ic.respondido) {
+          falta = 'Sin responder';
+        } else if (it.obligatorio &&
+            it.tipoRespuesta == 'estado_valor' &&
+            !na &&
+            r?.valorNum == null) {
+          falta = 'Falta el valor medido';
+        } else if (it.obligatorio &&
+            it.tipoRespuesta == 'estado_valor' &&
+            r?.estado == null) {
+          falta = 'Falta el estado';
+        } else if (it.fotoObligatoria && !na && ch.fotosDe(it.id).isEmpty) {
+          falta = 'Falta la foto';
+        }
+        if (falta != null) {
+          pendientes.add(
+            PendienteFirma(
+              inspeccionEquipoId: ie.id,
+              equipo: nombre,
+              indiceItem: i,
+              texto: '$falta: ${it.texto}',
+            ),
+          );
+        }
+      }
+    }
+    return pendientes;
+  }
+
+  /// **Firma** (F4.3), primera mitad, en una sola transacción: número
+  /// correlativo de la serie del aparato (§7.9), copia congelada de la
+  /// cabecera y de cada equipo con su cálculo F-gas, firmas del cliente y del
+  /// técnico (solo PNG, §10), recuentos del cierre (§7.10.3) y `firmada_at`.
+  /// Desde aquí el informe es de solo lectura. La segunda mitad
+  /// ([completarCierre]) genera el PDF y encola el cierre al final.
+  ///
+  /// [datosEquipo] devuelve la copia de un equipo con su cálculo (la hace
+  /// la capa que tiene la normativa). [serie] y [letra] son las del aparato:
+  /// en la demo, `DEMO` y `A`.
+  Future<Inspeccion> firmar({
+    required String inspeccionId,
+    required String resumen,
+    required FirmaCapturada cliente,
+    required FirmaCapturada tecnico,
+    required Map<String, Object?> Function(Equipo equipo, HechosEquipo? hechos)
+    datosEquipo,
+    required String normativaVersion,
+    required String serie,
+    required String letra,
+    String appVersion = '1.0.0',
+  }) => _db.transaction(() async {
+    final insp = await _inspeccionEditable(inspeccionId);
+    final pendientes = await pendientesDeFirma(inspeccionId);
+    if (pendientes.isNotEmpty) throw FirmaIncompleta(pendientes);
+    if (cliente.nombre.trim().isEmpty ||
+        cliente.png.isEmpty ||
+        tecnico.png.isEmpty) {
+      throw ArgumentError('Faltan el nombre o una de las firmas');
+    }
+    final now = _now;
+
+    // Número: AAAA-SERIE-LETRA-NNNN, con el año local de la firma.
+    final claveSerie = '${enHoraLocal(now).year}-$serie-$letra';
+    final contador = await (_db.select(
+      _db.contadoresInforme,
+    )..where((c) => c.serie.equals(claveSerie))).getSingleOrNull();
+    final n = (contador?.ultimo ?? 0) + 1;
+    await _db
+        .into(_db.contadoresInforme)
+        .insertOnConflictUpdate(
+          ContadoresInformeCompanion.insert(
+            serie: claveSerie,
+            ultimo: Value(n),
+          ),
+        );
+    final numero = '$claveSerie-${n.toString().padLeft(4, '0')}';
+
+    // Cabecera congelada.
+    final orden = await (_db.select(
+      _db.ordenesTrabajo,
+    )..where((o) => o.id.equals(insp.ordenId))).getSingle();
+    final inst = await (_db.select(
+      _db.instalaciones,
+    )..where((i) => i.id.equals(orden.instalacionId))).getSingle();
+    final cli = await (_db.select(
+      _db.clientes,
+    )..where((c) => c.id.equals(inst.clienteId))).getSingleOrNull();
+    final emp = await (_db.select(
+      _db.empresas,
+    )..where((e) => e.id.equals(insp.empresaId))).getSingleOrNull();
+    final tec = await (_db.select(
+      _db.miembros,
+    )..where((m) => m.id.equals(insp.tecnicoId))).getSingleOrNull();
+    Map<String, Object?>? sinSync(String t, DataClass? f) => f == null
+        ? null
+        : (aJsonPostgrest(t, f)..removeWhere(
+            (k, _) =>
+                k == 'created_at' || k == 'updated_at' || k == 'deleted_at',
+          ));
+    final cabecera = {
+      'empresa': sinSync('empresas', emp),
+      'tecnico': sinSync('miembros', tec),
+      'cliente': sinSync('clientes', cli),
+      'instalacion': sinSync('instalaciones', inst),
+      'tipo_intervencion': orden.tipoIntervencion,
+    };
+
+    // Equipos: copia y cálculo al firmar.
+    final ies = await (_db.select(
+      _db.inspeccionEquipos,
+    )..where((x) => x.inspeccionId.equals(inspeccionId))).get();
+    for (final ie in ies) {
+      final e = await (_db.select(
+        _db.equipos,
+      )..where((x) => x.id.equals(ie.equipoId))).getSingle();
+      final est = await (_db.select(
+        _db.estadoEquipo,
+      )..where((x) => x.id.equals(ie.equipoId))).getSingleOrNull();
+      final fila = ie.copyWith(
+        datosEquipoJson: Value(
+          jsonEncode(datosEquipo(e, est == null ? null : hechosDe(est))),
+        ),
+        updatedAt: now,
+      );
+      await _db.update(_db.inspeccionEquipos).replace(fila);
+      await _encolar('inspeccion_equipos', fila.id, fila);
+    }
+
+    // Firmas: el PNG primero, la fila después.
+    for (final (rol, f) in [('cliente', cliente), ('tecnico', tecnico)]) {
+      final id = newId();
+      final ruta = '${_rutaInspeccion(insp)}/firmas/$id.png';
+      final sha = await _guardarBlob(
+        origenId: id,
+        tabla: 'firmas',
+        bytes: f.png,
+        mime: 'image/png',
+        ruta: ruta,
+      );
+      final fila = Firma(
+        id: id,
+        empresaId: insp.empresaId,
+        inspeccionId: insp.id,
+        rol: rol,
+        nombre: f.nombre.trim(),
+        cargo: f.cargo?.trim().isEmpty ?? true ? null : f.cargo!.trim(),
+        rutaPng: ruta,
+        sha256: sha,
+        firmadaAt: now,
+        createdAt: now,
+        updatedAt: now,
+      );
+      await _db.into(_db.firmas).insert(fila);
+      await _encolar('firmas', fila.id, fila);
+    }
+
+    // Recuentos del cierre (§7.10.3): lo no borrado.
+    final ieIds = [for (final ie in ies) ie.id];
+    Future<int> contar<T extends Table, R>(
+      TableInfo<T, R> t,
+      Expression<bool> Function(T) filtro,
+    ) async => (await (_db.select(t)..where(filtro)).get()).length;
+    final fila = insp.copyWith(
+      numero: Value(numero),
+      version: 1,
+      finalizadaAt: Value(now),
+      firmadaAt: Value(now),
+      estado: EstadoInspeccion.firmada.wire,
+      resumenTexto: Value(resumen.trim()),
+      resumenOrigen: const Value('determinista'),
+      nEquipos: Value(ies.length),
+      nRespuestas: Value(
+        await contar(_db.respuestas, (r) => r.inspeccionEquipoId.isIn(ieIds)),
+      ),
+      nIncidencias: Value(
+        await contar(_db.incidencias, (r) => r.inspeccionEquipoId.isIn(ieIds)),
+      ),
+      nFotos: Value(
+        await contar(
+          _db.fotos,
+          (f) => f.inspeccionId.equals(insp.id) & f.deletedAt.isNull(),
+        ),
+      ),
+      nEnlacesFotos: Value(
+        await contar(
+          _db.incidenciaFotos,
+          (f) => f.inspeccionId.equals(insp.id),
+        ),
+      ),
+      nNotas: Value(
+        await contar(
+          _db.notasVoz,
+          (f) => f.inspeccionId.equals(insp.id) & f.deletedAt.isNull(),
+        ),
+      ),
+      nControles: Value(
+        await contar(
+          _db.controlesFugas,
+          (r) => r.inspeccionEquipoId.isIn(ieIds),
+        ),
+      ),
+      nMovimientosGas: Value(
+        await contar(
+          _db.movimientosGas,
+          (r) => r.inspeccionEquipoId.isIn(ieIds),
+        ),
+      ),
+      nResoluciones: Value(
+        await contar(
+          _db.resolucionesIncidencia,
+          (r) => r.inspeccionId.equals(insp.id),
+        ),
+      ),
+      normativaVersion: Value(normativaVersion),
+      appVersion: Value(appVersion),
+      datosCabeceraJson: Value(jsonEncode(cabecera)),
+      updatedAt: now,
+    );
+    // Sin encolar todavía: el cierre sube el último, con el PDF (§8.2).
+    await _db.update(_db.inspecciones).replace(fila);
+    return fila;
+  });
+
+  /// La fila de `miembros` de quien usa la app (para «Firmo como…»).
+  Future<Miembro?> miembroActual() => (_db.select(
+    _db.miembros,
+  )..where((m) => m.id.equals(sesion.miembroId))).getSingleOrNull();
+
+  /// T12: la visita, el checklist de cada equipo y lo que falta.
+  Stream<RevisionVisita?> watchRevision(String ordenId) => _observar(
+    [
+      _db.inspecciones,
+      _db.inspeccionEquipos,
+      _db.respuestas,
+      _db.incidencias,
+      _db.movimientosGas,
+      _db.controlesFugas,
+      _db.fotos,
+      _db.resolucionesIncidencia,
+      _db.equipos,
+    ],
+    () async {
+      final v = await cargarVisita(ordenId);
+      final insp = v?.inspeccion;
+      if (v == null || insp == null) return null;
+      return RevisionVisita(
+        visita: v,
+        checklists: [
+          for (final e in v.equipos)
+            if (e.inspeccionEquipoId != null)
+              (await cargarChecklist(e.inspeccionEquipoId!))!,
+        ],
+        pendientes: await pendientesDeFirma(insp.id),
+      );
+    },
+  );
+
+  /// Todo lo que sale en el PDF de una inspección.
+  Future<DatosInforme> cargarDatosInforme(
+    String inspeccionId, {
+    required bool esDemo,
+  }) async {
+    final insp = await (_db.select(
+      _db.inspecciones,
+    )..where((i) => i.id.equals(inspeccionId))).getSingle();
+    final orden = await (_db.select(
+      _db.ordenesTrabajo,
+    )..where((o) => o.id.equals(insp.ordenId))).getSingle();
+    final ies =
+        await (_db.select(_db.inspeccionEquipos)
+              ..where((x) => x.inspeccionId.equals(inspeccionId))
+              ..orderBy([(x) => OrderingTerm.asc(x.createdAt)]))
+            .get();
+    final bytes = <String, Uint8List>{};
+    final equipos = <EquipoInforme>[];
+    for (final ie in ies) {
+      final ch = (await cargarChecklist(ie.id))!;
+      for (final f in ch.fotos) {
+        final b = await bytesDe(f.id);
+        if (b != null) bytes[f.id] = b;
+      }
+      equipos.add(
+        EquipoInforme(
+          inspeccionEquipo: ie,
+          equipo: ch.equipo,
+          respuestas: [for (final i in ch.items) ?i.respuesta],
+          incidencias: ch.incidencias,
+          controles: ch.controles,
+          movimientos: ch.movimientos,
+          fotos: ch.fotos,
+          resoluciones: await (_db.select(
+            _db.resolucionesIncidencia,
+          )..where((r) => r.inspeccionEquipoId.equals(ie.id))).get(),
+        ),
+      );
+    }
+    final firmas = await (_db.select(
+      _db.firmas,
+    )..where((f) => f.inspeccionId.equals(inspeccionId))).get();
+    for (final f in firmas) {
+      final b = await bytesDe(f.id);
+      if (b != null) bytes[f.id] = b;
+    }
+    return DatosInforme(
+      inspeccion: insp,
+      tipoIntervencion: orden.tipoIntervencion,
+      equipos: equipos,
+      firmas: firmas,
+      bytes: bytes,
+      esDemo: esDemo,
+    );
+  }
+
+  /// **Cierre**, segunda mitad: `contenido_sha256`, PDF (lo genera
+  /// [generarPdf], en un isolate en el móvil), `pdf_sha256`, subida del PDF
+  /// y, **al final de la cola**, la fila de cierre (`fusionarSoloCon`, §8.2).
+  /// Después recalcula `estado_equipo` en local.
+  ///
+  /// Idempotente: si la app se cerró entre la firma y el PDF, T14 la vuelve
+  /// a llamar; si el PDF ya existe, no hace nada. El PDF canónico es el
+  /// primero que se generó (§7.10.6).
+  Future<Inspeccion> completarCierre(
+    String inspeccionId, {
+    required bool esDemo,
+    required Future<Uint8List> Function(DatosInforme datos, String contenidoSha)
+    generarPdf,
+  }) async {
+    final insp = await (_db.select(
+      _db.inspecciones,
+    )..where((i) => i.id.equals(inspeccionId))).getSingle();
+    if (insp.firmadaAt == null) {
+      throw StateError('La inspección $inspeccionId no está firmada');
+    }
+    if (insp.pdfSha256 != null) return insp;
+    final datos = await cargarDatosInforme(inspeccionId, esDemo: esDemo);
+    final contenido = contenidoSha256(datos);
+    final pdf = await generarPdf(datos, contenido);
+    final cerrada = await _db.transaction(() async {
+      final ruta = '${_rutaInspeccion(insp)}/pdf/informe_v${insp.version}.pdf';
+      final sha = await _guardarBlob(
+        origenId: insp.id,
+        tabla: 'inspecciones',
+        bytes: pdf,
+        mime: 'application/pdf',
+        ruta: ruta,
+      );
+      final fila = insp.copyWith(
+        pdfRuta: Value(ruta),
+        pdfSha256: Value(sha),
+        contenidoSha256: Value(contenido),
+        updatedAt: _now,
+      );
+      await _db.update(_db.inspecciones).replace(fila);
+      await _outbox.enqueueUpsert(
+        entity: 'inspecciones',
+        rowId: fila.id,
+        payload: aJsonPostgrest('inspecciones', fila),
+        fusionarSoloCon: '"estado":"firmada"',
+      );
+      return fila;
+    });
+    await recalcularEstadoEquipo(inspeccionId);
+    return cerrada;
+  }
+
+  /// T14: la inspección, si su cierre aún tiene cambios sin subir.
+  Stream<(Inspeccion, bool sinSubir)?> watchInforme(String inspeccionId) =>
+      _observar([_db.inspecciones, _db.outboxEntries], () async {
+        final i = await (_db.select(
+          _db.inspecciones,
+        )..where((x) => x.id.equals(inspeccionId))).getSingleOrNull();
+        if (i == null) return null;
+        final pendientes = await _outbox.pendingRowIds('inspecciones');
+        return (i, pendientes.contains(i.id));
+      });
+
+  /// Anota que se compartió el informe (`comparticiones`, fuera del
+  /// contenido firmado: puede crecer después de la firma, §7.10.5).
+  Future<void> anotarComparticion(String inspeccionId, String canal) async {
+    final insp = await (_db.select(
+      _db.inspecciones,
+    )..where((i) => i.id.equals(inspeccionId))).getSingle();
+    final now = _now;
+    final c = Comparticion(
+      id: newId(),
+      empresaId: insp.empresaId,
+      inspeccionId: insp.id,
+      canal: canal,
+      at: now,
+      por: sesion.miembroId,
+      createdAt: now,
+      updatedAt: now,
+    );
+    await _db.into(_db.comparticiones).insert(c);
+    await _encolar('comparticiones', c.id, c);
+  }
 
   // -------------------------------------------------------------------------
   // Internos

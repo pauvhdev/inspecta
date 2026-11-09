@@ -42,6 +42,12 @@ dependencies:
   uuid: ^4.6.0
   connectivity_plus: ^7.3.2
   url_launcher: 6.3.3
+  # Captura, firma y PDF sin red (DISEÑO.md §8.3 y §8.4).
+  image_picker: 1.2.4
+  crypto: 3.0.8
+  signature: 6.4.0
+  pdf: 3.13.1
+  printing: 5.15.1
 
 dev_dependencies:
   flutter_test:
@@ -71,6 +77,10 @@ flutter:
   assets:
     - assets/normativa/
     - assets/plantillas/
+    # Fotos de ejemplo generadas (tool/generar_fotos_demo.py) y la fuente
+    # que se incrusta en el PDF (assets/fuentes/LICENSE.txt).
+    - assets/demo/
+    - assets/fuentes/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

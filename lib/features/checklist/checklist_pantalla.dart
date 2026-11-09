@@ -8,6 +8,7 @@ import '../../data/repositories/inspeccion_repository.dart';
 import '../../design/pad_numerico.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
+import '../captura/fotos.dart';
 import '../equipo/ficha_equipo_pantalla.dart';
 import '../gas/gas_pantalla.dart';
 import '../incidencia/incidencia_pantalla.dart';
@@ -58,15 +59,22 @@ enum EstadoItem {
 /// progreso vive en Drift: al volver (o tras cerrar la app) se reanuda en el
 /// primer ítem sin responder.
 class ChecklistPantalla extends ConsumerStatefulWidget {
-  const ChecklistPantalla({super.key, required this.inspeccionEquipoId});
+  const ChecklistPantalla({
+    super.key,
+    required this.inspeccionEquipoId,
+    this.indiceInicial,
+  });
   final String inspeccionEquipoId;
+
+  /// Ítem con el que abrir (desde un pendiente de T12).
+  final int? indiceInicial;
 
   @override
   ConsumerState<ChecklistPantalla> createState() => _ChecklistPantallaState();
 }
 
 class _ChecklistPantallaState extends ConsumerState<ChecklistPantalla> {
-  int? _indice;
+  late int? _indice = widget.indiceInicial;
 
   void _ir(int i, int total) => setState(() => _indice = i.clamp(0, total - 1));
 
@@ -372,9 +380,7 @@ class _TarjetaItem extends ConsumerWidget {
             if (item.fotoObligatoria && actual != EstadoItem.na)
               const Padding(
                 padding: EdgeInsets.only(top: Gap.xs),
-                child: Text(
-                  'Pide foto (salvo N.A.): la cámara llega en una próxima versión.',
-                ),
+                child: Text('Pide foto (salvo si es N.A.).'),
               ),
             if (llevaValor) ...[
               const SizedBox(height: Gap.lg),
@@ -466,6 +472,38 @@ class _TarjetaItem extends ConsumerWidget {
                 onPressed: () => abrirIncidencia(context, ch: ch, item: item),
               ),
             ],
+            const SizedBox(height: Gap.md),
+            Wrap(
+              spacing: Gap.md,
+              runSpacing: Gap.md,
+              children: [
+                for (final f in ch.fotosDe(item.id))
+                  MiniaturaFoto(foto: f, editable: editable),
+                SizedBox(
+                  width: Touch.captura,
+                  height: Touch.captura,
+                  child: OutlinedButton(
+                    key: const Key('foto_item'),
+                    onPressed: editable
+                        ? () => tomarFoto(
+                            context,
+                            ref,
+                            inspeccionEquipoId: ch.inspeccionEquipo.id,
+                            itemId: item.id,
+                          )
+                        : null,
+                    style: OutlinedButton.styleFrom(padding: EdgeInsets.zero),
+                    child: const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.photo_camera, size: 32),
+                        Text('Foto'),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: Gap.md),
             BotonSecundario(
               texto: r?.observacion == null

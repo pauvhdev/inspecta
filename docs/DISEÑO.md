@@ -966,3 +966,22 @@ T5 Checklist, T6 valor numérico, T10 Incidencia y T11 Registro de gas y control
 | Permisos | Día 4 | `INTERNET` ya estaba en el manifiesto main (día 1). Micrófono y ubicación pasan al día 5, con `record` y `geolocator`, que son los que piden el permiso |
 | Objetivos táctiles | 56 dp | Botones de `Opciones` con ancho mínimo de 56 dp (antes el tema les daba ancho infinito) y `IconButton` a 56 dp en el tema, flecha de volver incluida. La barra de la píldora tiene alto fijo: si crecía, encogía la barra de título y la flecha bajaba a 34 dp |
 | Hito «24 ítems con guantes en menos de 4 min» | Cronometrado | Pendiente: se mide en un Android real |
+
+### Días 5 (parte), 6 y 7 (09/11/2026): fotos, firma y PDF
+
+Se adelantó lo que hace falta para enseñar una visita completa de punta a punta: foto de evidencia, revisar y firmar, número, candado, cierre al final de la cola y PDF generado en el aparato. Del día 5 queda pendiente lo que depende de plugins nativos o de medir en un móvil real (voz, GPS, miniatura y variante de 1.000 px en un isolate, nitidez y brillo, T15, T16).
+
+| Tema | Antes | Ahora |
+|---|---|---|
+| Foto (T7) | Cámara, variantes, calidad, GPS | **Mínima:** `image_picker` (1.600 px, calidad 80; en la web, selector de archivos), archivo y, en la demo, «Usar foto de ejemplo». Va a `blobs` con su SHA-256 y fila `fotos` ligada a (`inspeccion_equipo_id`, `item_plantilla_id`). Borrar = `deleted_at`, con confirmación. Sin miniatura ni variante: el PDF incrusta el JPEG original |
+| Fotos de ejemplo | «Usar foto de ejemplo» | **Ilustraciones generadas** por `tool/generar_fotos_demo.py` (etiqueta F-gas, placa, filtro) con la marca «IMAGEN DE EJEMPLO GENERADA». No son fotos reales |
+| Entrada de fichero en la cola | `{bucket, ruta, blob_id, tabla, fila}` | `entity = 'storage'`, `rowId` = id del blob, payload con esas claves y `mime`. Va **antes** que la fila que la anuncia. El `SyncEngine` (día 9-10) la reconocerá por `entity` |
+| Pendientes de firma | Obligatorios y fotos bloquean | `pendientesDeFirma` en el repositorio (y otra vez dentro de `firmar`): obligatorio sin responder, medición obligatoria sin valor salvo N.A., y foto obligatoria sin foto salvo N.A. En T12 son botones que llevan al ítem |
+| T2 «Revisar y firmar» | Inactivo con el motivo | Activo siempre que la visita está en curso; lo que falta lo enseña T12 (pulsable) y debajo del botón se ve cuántas obligatorias faltan |
+| Firma (T13) | Apaisada, cliente y técnico con rúbrica guardada | `signature` 6.4.0, a pantalla completa y apaisada en Android, fuera de listas con scroll. El técnico **firma cada vez**: la rúbrica guardada (T16) queda pendiente. Solo se guarda el PNG |
+| Numeración | `AAAA-SERIE-LETRA-NNNN` | En la transacción de firma, con `contadores_informe`; en la demo `DEMO-A` (la siembra deja la 0001 de cada año). En la nube, serie y letra vendrán de `miembros` y `dispositivos` (día 9): sin ellas no se firma |
+| Cierre | Hijos, ficheros y al final la fila de cierre | `firmar` (transacción: número, cabecera congelada, `datos_equipo_json` con el cálculo F-gas y RITE **tras** esta visita, firmas, recuentos, `firmada_at`) y `completarCierre` (contenido_sha256, PDF, pdf_sha256, PDF a la cola y el cierre el último con `fusionarSoloCon`). Si la app se cierra entre las dos, T14 termina el cierre. Después se recalcula `estado_equipo` en local |
+| `contenido_sha256` | JSON canónico de lo que sale en el PDF | `lib/informe/datos_informe.dart`: filas en el formato de PostgREST, por tabla y por `id`, claves ordenadas, sin `created_at`, `updated_at`, `sincronizada_at` ni las propias huellas. Probado: otro orden → mismo hash; una respuesta cambiada → otro |
+| PDF | `pdf` 3.13.1, TTF, isolate | Hecho (`lib/informe/pdf_informe.dart`): 11 apartados, Roboto 2.137 (Apache 2.0, `assets/fuentes/LICENSE.txt`), `compute` (isolate en Android, hilo principal en la web) y marca de agua en la demo. Roboto no tiene «₂» ni «→»: se escribe «CO2» y «:». Muestras en `docs/muestras/` (`GENERAR_MUESTRAS=1`) |
+| T14 | Vista previa en Android, «Abrir PDF» en la web, compartir | `printing` 5.15.1: `layoutPdf` (vista previa e impresión) y `sharePdf` (hoja de compartir en Android, descarga en la web). Solo se anota `comparticiones` en la web (`descarga`): la hoja de Android no dice qué app se eligió **[A VERIFICAR: canal `otro`]** |
+| Rasterizar el PDF a PNG | `pdftoppm` | No está instalado en el equipo: las páginas se revisaron con pdf.js en el navegador |
