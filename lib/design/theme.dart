@@ -128,6 +128,13 @@ class InspectaTheme {
           ),
         ),
       ),
+      // Iconos pulsables (incluida la flecha de volver) a 56 dp como todo lo
+      // demás (§6.0, `tactil_56dp_test`).
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          minimumSize: const Size(Touch.min, Touch.min),
+        ),
+      ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           minimumSize: const Size(Touch.min, Touch.min),

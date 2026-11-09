@@ -123,3 +123,8 @@ final fichaProvider = StreamProvider.family<FichaEquipo?, String>(
   (ref, equipoId) =>
       ref.watch(inspeccionRepositoryProvider)!.watchFicha(equipoId),
 );
+
+/// T5 Checklist de un `inspeccion_equipos`.
+final checklistProvider = StreamProvider.family<ChecklistEquipo?, String>(
+  (ref, ieId) => ref.watch(inspeccionRepositoryProvider)!.watchChecklist(ieId),
+);

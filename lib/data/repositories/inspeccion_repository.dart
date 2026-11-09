@@ -4,13 +4,17 @@ import 'package:drift/drift.dart';
 
 import '../../core/ids.dart';
 import '../../dominio/estados.dart';
-import '../../dominio/normativa.dart' show DiaCalendario;
+import '../../dominio/fgas.dart';
+import '../../dominio/normativa.dart' show DiaCalendario, OrigenGas;
 import '../../dominio/plantillas.dart' show TipoIntervencion;
 import '../../dominio/rite.dart';
 import '../../dominio/tipos.dart';
 import '../local/app_database.dart';
 import '../sync/mapper.dart';
 import '../sync/outbox.dart';
+import 'modelos_checklist.dart';
+
+export 'modelos_checklist.dart';
 
 // Repositorio de la visita (DISEÑO.md §8.2, «Contrato»; patrón de
 // `session_repository.dart` de Forja).
@@ -855,10 +859,327 @@ class InspeccionRepository {
                   incidenciasAbiertasJson: nuevo.incidenciasAbiertasJson,
                   createdAt: fila?.createdAt ?? now,
                   updatedAt: now,
-                ),
+                ).toCompanion(false),
               );
         }
       });
+
+  // -------------------------------------------------------------------------
+  // Checklist, incidencias y gas (día 4)
+  // -------------------------------------------------------------------------
+
+  /// T5: el checklist de un `inspeccion_equipos`; null si no existe.
+  Stream<ChecklistEquipo?> watchChecklist(String inspeccionEquipoId) =>
+      _observar([
+        _db.inspeccionEquipos,
+        _db.inspecciones,
+        _db.respuestas,
+        _db.incidencias,
+        _db.movimientosGas,
+        _db.controlesFugas,
+        _db.equipos,
+        _db.estadoEquipo,
+        _db.itemsPlantilla,
+      ], () => cargarChecklist(inspeccionEquipoId));
+
+  Future<ChecklistEquipo?> cargarChecklist(String inspeccionEquipoId) async {
+    final ie = await (_db.select(
+      _db.inspeccionEquipos,
+    )..where((x) => x.id.equals(inspeccionEquipoId))).getSingleOrNull();
+    if (ie == null) return null;
+    final insp = await (_db.select(
+      _db.inspecciones,
+    )..where((x) => x.id.equals(ie.inspeccionId))).getSingle();
+    final equipo = await (_db.select(
+      _db.equipos,
+    )..where((x) => x.id.equals(ie.equipoId))).getSingle();
+    final plantilla = await (_db.select(
+      _db.plantillas,
+    )..where((x) => x.id.equals(ie.plantillaId))).getSingleOrNull();
+    final items =
+        await (_db.select(_db.itemsPlantilla)
+              ..where((x) => x.plantillaId.equals(ie.plantillaId))
+              ..orderBy([(x) => OrderingTerm.asc(x.orden)]))
+            .get();
+    final respuestas = {
+      for (final r in await (_db.select(
+        _db.respuestas,
+      )..where((x) => x.inspeccionEquipoId.equals(ie.id))).get())
+        r.itemPlantillaId: r,
+    };
+    final estado = await (_db.select(
+      _db.estadoEquipo,
+    )..where((x) => x.id.equals(ie.equipoId))).getSingleOrNull();
+    return ChecklistEquipo(
+      inspeccionEquipo: ie,
+      inspeccion: insp,
+      equipo: equipo,
+      plantilla: plantilla,
+      items: [
+        for (final i in items)
+          ItemConRespuesta(item: i, respuesta: respuestas[i.id]),
+      ],
+      hechos: estado == null ? null : hechosDe(estado),
+      incidencias:
+          await (_db.select(_db.incidencias)
+                ..where((x) => x.inspeccionEquipoId.equals(ie.id))
+                ..orderBy([(x) => OrderingTerm.asc(x.createdAt)]))
+              .get(),
+      movimientos:
+          await (_db.select(_db.movimientosGas)
+                ..where((x) => x.inspeccionEquipoId.equals(ie.id))
+                ..orderBy([(x) => OrderingTerm.asc(x.createdAt)]))
+              .get(),
+      controles:
+          await (_db.select(_db.controlesFugas)
+                ..where((x) => x.inspeccionEquipoId.equals(ie.id))
+                ..orderBy([(x) => OrderingTerm.asc(x.createdAt)]))
+              .get(),
+    );
+  }
+
+  /// Responde un ítem (T5/T6). Crea la respuesta la primera vez y la
+  /// actualiza después; copia el texto y el código normativo del ítem
+  /// (§7.4: el informe es autocontenido). Pasar null deja el campo vacío.
+  /// Devuelve el estado anterior para «Deshacer».
+  Future<RespuestaPrevia> responder({
+    required String inspeccionEquipoId,
+    required String itemId,
+    required String? estado,
+    required double? valor,
+    required String? observacion,
+  }) => _db.transaction(() async {
+    const estados = {'ok', 'observacion', 'defecto', 'na'};
+    if (estado != null && !estados.contains(estado)) {
+      throw ArgumentError.value(estado, 'estado', 'Desconocido');
+    }
+    if (valor != null && !valor.isFinite) {
+      throw ArgumentError.value(valor, 'valor', 'No es un número');
+    }
+    final ie = await (_db.select(
+      _db.inspeccionEquipos,
+    )..where((x) => x.id.equals(inspeccionEquipoId))).getSingle();
+    final insp = await _inspeccionEditable(ie.inspeccionId);
+    final item = await (_db.select(
+      _db.itemsPlantilla,
+    )..where((x) => x.id.equals(itemId))).getSingle();
+    if (item.plantillaId != ie.plantillaId) {
+      throw ArgumentError.value(itemId, 'itemId', 'No es de esta plantilla');
+    }
+    final previa =
+        await (_db.select(_db.respuestas)..where(
+              (x) =>
+                  x.inspeccionEquipoId.equals(ie.id) &
+                  x.itemPlantillaId.equals(itemId),
+            ))
+            .getSingleOrNull();
+    final now = _now;
+    final fila = Respuesta(
+      id: previa?.id ?? newId(),
+      empresaId: insp.empresaId,
+      inspeccionEquipoId: ie.id,
+      itemPlantillaId: item.id,
+      textoItem: item.texto,
+      codigoNormativo: item.codigoNormativo,
+      estado: estado,
+      valorNum: valor,
+      unidad: valor == null ? null : item.unidad,
+      observacion: observacion == null || observacion.trim().isEmpty
+          ? null
+          : observacion.trim(),
+      origen: previa?.origen ?? 'manual',
+      propuestaIaId: previa?.propuestaIaId,
+      createdAt: previa?.createdAt ?? now,
+      updatedAt: now,
+    );
+    // `toCompanion(false)`: un null tiene que vaciar la columna; con la fila
+    // tal cual, Drift trata los null como «no tocar» y no se podría borrar.
+    await _db
+        .into(_db.respuestas)
+        .insertOnConflictUpdate(fila.toCompanion(false));
+    await _encolar('respuestas', fila.id, fila);
+    return RespuestaPrevia(
+      inspeccionEquipoId: ie.id,
+      itemId: itemId,
+      estado: previa?.estado,
+      valor: previa?.valorNum,
+      observacion: previa?.observacion,
+    );
+  });
+
+  /// «Deshacer» de una respuesta: la deja como estaba (vacía si no existía).
+  /// Es un UPDATE más, que el servidor admite antes de la firma.
+  Future<void> deshacerRespuesta(RespuestaPrevia p) => responder(
+    inspeccionEquipoId: p.inspeccionEquipoId,
+    itemId: p.itemId,
+    estado: p.estado,
+    valor: p.valor,
+    observacion: p.observacion,
+  );
+
+  /// T10: crea o edita una incidencia de esta visita. La gravedad la elige
+  /// el técnico, sin valor por defecto (§9.1): sin ella no se guarda.
+  /// `respuesta_id` solo se rellena al crearla (§8.2).
+  Future<String> guardarIncidencia({
+    String? id,
+    required String inspeccionEquipoId,
+    String? itemId,
+    required String descripcion,
+    required String gravedad,
+    String? accionRecomendada,
+    int? plazoDias,
+    required bool paraEquipo,
+  }) => _db.transaction(() async {
+    if (descripcion.trim().isEmpty) {
+      throw ArgumentError.value(descripcion, 'descripcion', 'Vacía');
+    }
+    if (!{'leve', 'grave', 'muy_grave'}.contains(gravedad)) {
+      throw ArgumentError.value(gravedad, 'gravedad', 'Desconocida');
+    }
+    if (plazoDias != null && plazoDias <= 0) {
+      throw ArgumentError.value(plazoDias, 'plazoDias', 'Debe ser > 0');
+    }
+    final ie = await (_db.select(
+      _db.inspeccionEquipos,
+    )..where((x) => x.id.equals(inspeccionEquipoId))).getSingle();
+    final insp = await _inspeccionEditable(ie.inspeccionId);
+    final previa = id == null
+        ? null
+        : await (_db.select(
+            _db.incidencias,
+          )..where((x) => x.id.equals(id))).getSingleOrNull();
+    if (previa != null && previa.inspeccionEquipoId != ie.id) {
+      throw StateError('La incidencia $id es de otro equipo');
+    }
+    var respuestaId = previa?.respuestaId;
+    if (previa == null && itemId != null) {
+      respuestaId =
+          (await (_db.select(_db.respuestas)..where(
+                    (x) =>
+                        x.inspeccionEquipoId.equals(ie.id) &
+                        x.itemPlantillaId.equals(itemId),
+                  ))
+                  .getSingleOrNull())
+              ?.id;
+    }
+    final now = _now;
+    final accion = accionRecomendada?.trim();
+    final fila = Incidencia(
+      id: previa?.id ?? id ?? newId(),
+      empresaId: insp.empresaId,
+      inspeccionEquipoId: ie.id,
+      respuestaId: respuestaId,
+      descripcion: descripcion.trim(),
+      gravedad: gravedad,
+      accionRecomendada: accion == null || accion.isEmpty ? null : accion,
+      plazoDias: plazoDias,
+      paraEquipo: paraEquipo,
+      origen: previa?.origen ?? 'manual',
+      propuestaIaId: previa?.propuestaIaId,
+      decididaPor: sesion.miembroId,
+      decididaAt: now,
+      createdAt: previa?.createdAt ?? now,
+      updatedAt: now,
+    );
+    // `toCompanion(false)`: un null tiene que vaciar la columna; con la fila
+    // tal cual, Drift trata los null como «no tocar» y no se podría borrar.
+    await _db
+        .into(_db.incidencias)
+        .insertOnConflictUpdate(fila.toCompanion(false));
+    await _encolar('incidencias', fila.id, fila);
+    return fila.id;
+  });
+
+  /// T11: guarda un movimiento de gas. [validacion] es la de
+  /// `validarCargaGas` con estos mismos datos: si bloquea, no se guarda
+  /// (doble barrera: la pantalla ya lo enseña a pantalla completa).
+  Future<String> registrarMovimientoGas({
+    required String inspeccionEquipoId,
+    required MovimientoGasNuevo m,
+    required ValidacionCarga validacion,
+  }) => _db.transaction(() async {
+    if (!m.kg.isFinite || m.kg <= 0) {
+      throw ArgumentError.value(m.kg, 'kg', 'Debe ser > 0');
+    }
+    if (validacion is CargaBloqueada) throw CargaGasBloqueada(validacion);
+    final ie = await (_db.select(
+      _db.inspeccionEquipos,
+    )..where((x) => x.id.equals(inspeccionEquipoId))).getSingle();
+    final insp = await _inspeccionEditable(ie.inspeccionId);
+    final now = _now;
+    final esCarga = m.tipo == TipoMovimientoGas.carga;
+    final fila = MovimientoGas(
+      id: newId(),
+      empresaId: insp.empresaId,
+      inspeccionEquipoId: ie.id,
+      tipo: m.tipo.wire,
+      refrigerante: m.refrigerante,
+      kg: m.kg,
+      origenGas: esCarga ? m.origen?.wire : null,
+      regeneradoLote: esCarga && m.origen == OrigenGas.regenerado
+          ? m.datos.regeneradoLote
+          : null,
+      regeneradoEtiquetaFotoId: esCarga && m.origen == OrigenGas.regenerado
+          ? m.datos.regeneradoEtiquetaFotoId
+          : null,
+      recicladoRecuperadoPor: esCarga && m.origen == OrigenGas.reciclado
+          ? m.datos.recicladoRecuperadoPor?.wire
+          : null,
+      recicladoDeclaracion: esCarga && m.origen == OrigenGas.reciclado
+          ? m.datos.recicladoDeclaracion
+          : null,
+      gestorNombre: m.gestorNombre,
+      gestorDocumento: m.gestorDocumento,
+      motivo: m.motivo,
+      avisoPcg: validacion is CargaConAviso,
+      reglaAplicada: validacion.regla.wire,
+      createdAt: now,
+      updatedAt: now,
+    );
+    await _db.into(_db.movimientosGas).insert(fila);
+    await _encolar('movimientos_gas', fila.id, fila);
+    return fila.id;
+  });
+
+  /// T11: control de fugas. Si se reparó, guarda la ventana del nuevo
+  /// control (art. 4.5) que calcula `fgas.dart` y llega ya hecha.
+  Future<String> registrarControlFugas({
+    required String inspeccionEquipoId,
+    String? metodo,
+    String? detectorModelo,
+    required String resultado,
+    String? localizacion,
+    bool? reparada,
+    VentanaNuevoControl? ventana,
+  }) => _db.transaction(() async {
+    if (resultado != 'sin_fuga' && resultado != 'fuga') {
+      throw ArgumentError.value(resultado, 'resultado', 'Desconocido');
+    }
+    final ie = await (_db.select(
+      _db.inspeccionEquipos,
+    )..where((x) => x.id.equals(inspeccionEquipoId))).getSingle();
+    final insp = await _inspeccionEditable(ie.inspeccionId);
+    final now = _now;
+    final reparadaAhora = resultado == 'fuga' && reparada == true;
+    final fila = ControlFugas(
+      id: newId(),
+      empresaId: insp.empresaId,
+      inspeccionEquipoId: ie.id,
+      metodo: metodo,
+      detectorModelo: detectorModelo,
+      resultado: resultado,
+      localizacion: resultado == 'fuga' ? localizacion : null,
+      reparada: resultado == 'fuga' ? reparada : null,
+      fechaReparacion: reparadaAhora ? now : null,
+      recontrolDesde: reparadaAhora ? ventana?.desde.toUtc() : null,
+      recontrolHasta: reparadaAhora ? ventana?.hasta.toUtc() : null,
+      createdAt: now,
+      updatedAt: now,
+    );
+    await _db.into(_db.controlesFugas).insert(fila);
+    await _encolar('controles_fugas', fila.id, fila);
+    return fila.id;
+  });
 
   // -------------------------------------------------------------------------
   // Internos

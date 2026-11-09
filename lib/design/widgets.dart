@@ -123,6 +123,7 @@ class Opciones<T> extends StatelessWidget {
                         : () => onChanged!(o.valor),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: esquema.onSurface,
+                      minimumSize: const Size(Touch.min, Touch.min),
                     ),
                     child: Text(o.texto),
                   ),
@@ -215,12 +216,22 @@ class Seccion extends StatelessWidget {
 /// La píldora debajo de la barra superior, a todo el ancho: en la fila del
 /// título no cabe con letra grande en un móvil de 360 dp.
 PreferredSizeWidget barraSync() => const PreferredSize(
-  preferredSize: Size.fromHeight(40),
-  child: Padding(
-    padding: EdgeInsets.fromLTRB(Gap.lg, 0, Gap.lg, Gap.sm),
-    child: Align(alignment: Alignment.centerLeft, child: PildoraSync()),
+  preferredSize: Size.fromHeight(_altoBarraSync),
+  // Alto fijo: si la píldora ocupara más de lo declarado, la barra de
+  // título encogería y la flecha de volver bajaría de 56 dp.
+  child: SizedBox(
+    height: _altoBarraSync,
+    child: Padding(
+      padding: EdgeInsets.fromLTRB(Gap.lg, 0, Gap.lg, Gap.sm),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: FittedBox(fit: BoxFit.scaleDown, child: PildoraSync()),
+      ),
+    ),
   ),
 );
+
+const _altoBarraSync = 48.0;
 
 /// Píldora fija «Modo local · N sin subir» (§6.0, «Sin cobertura»). La parte
 /// de la conexión y la de la IA llegan con el `SyncEngine` y la cola de IA.
@@ -245,4 +256,40 @@ class PildoraSync extends ConsumerWidget {
       fondo: InspectaColors.pendingBg,
     );
   }
+}
+
+/// «Marcado como Defecto · Deshacer» durante 5 s (§6.0: deshacer con botón
+/// grande en vez de diálogos). El botón mide 56 dp, no el de `SnackBarAction`.
+void mostrarDeshacer(
+  BuildContext context, {
+  required String texto,
+  required VoidCallback onDeshacer,
+}) {
+  final m = ScaffoldMessenger.of(context);
+  m.hideCurrentSnackBar();
+  m.showSnackBar(
+    SnackBar(
+      duration: const Duration(seconds: 5),
+      content: Row(
+        children: [
+          Expanded(child: Text(texto, style: const TextStyle(fontSize: 18))),
+          const SizedBox(width: Gap.md),
+          SizedBox(
+            height: Touch.min,
+            child: FilledButton(
+              key: const Key('deshacer'),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(Touch.min * 2, Touch.min),
+              ),
+              onPressed: () {
+                m.hideCurrentSnackBar();
+                onDeshacer();
+              },
+              child: const Text('Deshacer'),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }

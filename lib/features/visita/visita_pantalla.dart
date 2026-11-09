@@ -7,6 +7,7 @@ import '../../data/repositories/inspeccion_repository.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
 import '../../dominio/tipos.dart';
+import '../checklist/checklist_pantalla.dart';
 import '../equipo/ficha_equipo_pantalla.dart';
 import '../textos.dart';
 import 'anadir_equipo_pantalla.dart';
@@ -160,10 +161,12 @@ class _FilaEquipo extends StatelessWidget {
         borderRadius: Radii.brMd,
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute<void>(
-            builder: (_) => FichaEquipoPantalla(
-              equipoId: eq.id,
-              soloLectura: v.empezada && !v.editable,
-            ),
+            builder: (_) => e.inspeccionEquipoId != null
+                ? ChecklistPantalla(inspeccionEquipoId: e.inspeccionEquipoId!)
+                : FichaEquipoPantalla(
+                    equipoId: eq.id,
+                    soloLectura: v.empezada && !v.editable,
+                  ),
           ),
         ),
         child: ConstrainedBox(

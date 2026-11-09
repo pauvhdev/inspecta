@@ -946,3 +946,23 @@ Siguen abiertos: categoría de la enfriadora (se propone aire acondicionado y el
 | Ficha antes de empezar la visita | — | Editable (los datos del equipo no son hijos del informe); solo lectura con la visita firmada o descartada. «Leer placa» se ve inactivo con el motivo (cámara e IA, días 5 y 11) |
 | Hermético o detección sin dato | — | El bloque F-gas calcula como «no» (lo prudente) y lo dice |
 | Sesión | — | En la demo, el técnico ficticio (`DemoDatos.sesion`); en modo local sin demo, Hoy explica cómo arrancar la demo; en la nube llega con el día 9 |
+
+### Día 4 (09/11/2026): lo que cambió al construir
+
+T5 Checklist, T6 valor numérico, T10 Incidencia y T11 Registro de gas y control de fugas. 421 pruebas en verde (13 nuevas: `checklist_gas_test` y `tactil_56dp_test`, que recorre T1-T6, T10 y T11 a 360 dp y hace el flujo con guantes), `flutter analyze` limpio.
+
+| Tema | Antes | Ahora |
+|---|---|---|
+| Vaciar un campo | — | **Error encontrado por las pruebas:** `insertOnConflictUpdate` con la fila de Drift trata los null como «no tocar», así que «Deshacer» no vaciaba una respuesta. Las escrituras de respuestas, incidencias y `estado_equipo` usan `toCompanion(false)` |
+| Entrada al checklist | — | Con la visita empezada, tocar un equipo en T2 abre T5; desde T5 se va a la ficha, al gas y a las incidencias. Se reanuda en el primer ítem sin responder |
+| Avance automático | Al responder | Al elegir OK, Observación o N.A.; **Defecto no avanza** (ofrece «Registrar incidencia»), y un `estado_valor` sin valor tampoco («Falta el valor medido») |
+| Deshacer | Botón grande 5 s | `mostrarDeshacer` (`widgets.dart`): `SnackBarAction` mide menos de 56 dp, así que el botón va dentro del contenido |
+| T6 | Valor grande, teclado de 72 dp, +/− fino y grueso | Igual, con ± (temperaturas y presiones bajo cero), referencia «Última vez» de `estado_equipo` y aviso fuera de rango que no bloquea |
+| `si_no` | — | Ninguna plantilla base lo usa: Sí se guarda como `ok` y No como `defecto` **[A VERIFICAR]** |
+| Gravedad | Tres botones con explicación | Textos de la explicación propuestos por Inspecta **[A VERIFICAR con el técnico de la llamada]**. Sin gravedad no se guarda; plazo 3 meses, 6 meses o sin plazo |
+| Bloqueo del art. 13.4 | A pantalla completa | `BloqueoCargaPantalla`, y el repositorio rechaza además la carga bloqueada (`CargaGasBloqueada`): doble barrera. Una carga de gas **regenerado** sigue bloqueada hasta que exista la foto de la etiqueta del art. 12.7 (día 5) |
+| Control de fugas | Resultado y reparación | Fuga reparada → `recontrol_desde/hasta` con `nuevoControlTrasReparacion` (art. 4.5), visible en T11 |
+| Fotos obligatorias y voz | — | T5 dice que el ítem pide foto; la cámara, la voz y sus botones llegan el día 5 |
+| Permisos | Día 4 | `INTERNET` ya estaba en el manifiesto main (día 1). Micrófono y ubicación pasan al día 5, con `record` y `geolocator`, que son los que piden el permiso |
+| Objetivos táctiles | 56 dp | Botones de `Opciones` con ancho mínimo de 56 dp (antes el tema les daba ancho infinito) y `IconButton` a 56 dp en el tema, flecha de volver incluida. La barra de la píldora tiene alto fijo: si crecía, encogía la barra de título y la flecha bajaba a 34 dp |
+| Hito «24 ítems con guantes en menos de 4 min» | Cronometrado | Pendiente: se mide en un Android real |
