@@ -17,6 +17,18 @@ enum TipoEquipo {
   const TipoEquipo(this.wire);
   final String wire;
 
+  /// Nombre visible.
+  String get texto => switch (this) {
+    split => 'Split',
+    conductos => 'Conductos',
+    vrf => 'VRF',
+    rooftop => 'Rooftop',
+    enfriadora => 'Enfriadora',
+    bombaCalor => 'Bomba de calor',
+    uta => 'UTA',
+    otro => 'Otro',
+  };
+
   static TipoEquipo desde(String wire) => values.firstWhere(
     (t) => t.wire == wire,
     orElse: () => throw ArgumentError.value(wire, 'tipo', 'Tipo desconocido'),

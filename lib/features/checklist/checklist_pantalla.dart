@@ -115,6 +115,9 @@ class _ChecklistPantallaState extends ConsumerState<ChecklistPantalla> {
               LinearProgressIndicator(
                 value: ch.respondidos / total,
                 minHeight: 8,
+                color: InspectaColors.ok,
+                backgroundColor: InspectaColors.surfaceHighLight,
+                borderRadius: Radii.brSm,
               ),
               const SizedBox(height: Gap.lg),
               _TarjetaItem(

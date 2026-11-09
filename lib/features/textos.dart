@@ -8,16 +8,7 @@ import '../dominio/tipos.dart';
 
 // Textos visibles de los enums del dominio.
 
-String textoTipoEquipo(TipoEquipo t) => switch (t) {
-  TipoEquipo.split => 'Split',
-  TipoEquipo.conductos => 'Conductos',
-  TipoEquipo.vrf => 'VRF',
-  TipoEquipo.rooftop => 'Rooftop',
-  TipoEquipo.enfriadora => 'Enfriadora',
-  TipoEquipo.bombaCalor => 'Bomba de calor',
-  TipoEquipo.uta => 'UTA',
-  TipoEquipo.otro => 'Otro',
-};
+String textoTipoEquipo(TipoEquipo t) => t.texto;
 
 String textoIntervencion(TipoIntervencion t) => switch (t) {
   TipoIntervencion.preventivo => 'Preventivo',

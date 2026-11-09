@@ -86,7 +86,10 @@ class InspectaTheme {
         scrolledUnderElevation: 0,
         centerTitle: false,
         foregroundColor: text,
+        // Tamaño explícito: `base.textTheme` aún no lleva la geometría de
+        // `Typography` (se aplica en `Theme.of`) y el título salía a 14.
         titleTextStyle: base.textTheme.titleLarge?.copyWith(
+          fontSize: 22,
           color: text,
           fontWeight: FontWeight.w700,
           letterSpacing: -0.3,

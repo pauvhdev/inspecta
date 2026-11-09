@@ -1355,7 +1355,7 @@ class InspeccionRepository {
     for (final ie in ies) {
       final ch = (await cargarChecklist(ie.id))!;
       final nombre = [
-        ch.equipo.tipo.wire,
+        ch.equipo.tipo.texto,
         if (ch.equipo.ubicacion != null) ch.equipo.ubicacion!,
       ].join(' · ');
       for (final (i, ic) in ch.items.indexed) {

@@ -162,7 +162,11 @@ class _RevisarPantallaState extends ConsumerState<RevisarPantalla> {
                                 ),
                               ),
                         child: Text(
-                          '${p.equipo.replaceAll('_', ' ')}: ${p.texto}',
+                          '${p.equipo}: ${p.texto}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w400,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                     ),

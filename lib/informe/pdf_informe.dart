@@ -55,6 +55,10 @@ String _categoria(Object? c) => switch (c) {
   _ => '—',
 };
 
+/// «12 kW» o «—» si no consta.
+String _kw(Map<String, Object?> m, String k) =>
+    m[k] == null ? '—' : '${_t(m, k)} kW';
+
 Map<String, Object?> _mapa(Object? o) =>
     o is Map ? o.cast<String, Object?>() : const {};
 
@@ -227,7 +231,7 @@ Future<Uint8List> construirPdf(
       ('Expediente', _t(inst, 'expediente_ccaa')),
       (
         'Potencia declarada',
-        '${_t(inst, 'potencia_frio_kw')} kW frío · ${_t(inst, 'potencia_calor_kw')} kW calor',
+        '${_kw(inst, 'potencia_frio_kw')} frío · ${_kw(inst, 'potencia_calor_kw')} calor',
       ),
       (
         'Contrato / manual',
@@ -256,7 +260,7 @@ Future<Uint8List> construirPdf(
         ('N.º de serie', _t(eq, 'n_serie')),
         (
           'Potencia',
-          '${_t(eq, 'potencia_frio_kw')} kW frío · ${_t(eq, 'potencia_calor_kw')} kW calor',
+          '${_kw(eq, 'potencia_frio_kw')} frío · ${_kw(eq, 'potencia_calor_kw')} calor',
         ),
         (
           'Refrigerante y carga',

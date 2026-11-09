@@ -111,6 +111,9 @@ class Opciones<T> extends StatelessWidget {
             height: Touch.min,
             child: o.valor == seleccionada
                 ? FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(Touch.min, Touch.min),
+                    ),
                     onPressed: onChanged == null
                         ? null
                         : () => onChanged!(o.valor),
